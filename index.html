@@ -169,6 +169,24 @@
       background: #fff;
     }
 
+    .card-car-input {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border: 1px transparent;
+      border-radius: 4px;
+      width: 100%;
+      outline: none;
+      background: transparent;
+      padding: 1px 0;
+      margin-bottom: 2px;
+    }
+
+    .card-car-input:focus {
+      border-color: var(--accent-color);
+      background: #fff;
+    }
+
     .card-date {
       font-size: 0.7rem;
       color: var(--text-muted);
@@ -181,6 +199,18 @@
       display: flex;
       gap: 4px;
       align-items: center;
+    }
+
+    .date-picker-mini {
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 2px 4px;
+      font-size: 0.75rem;
+      outline: none;
+      background: #fff;
+      cursor: pointer;
+      width: 32px;
+      height: 24px;
     }
 
     .btn-icon {
@@ -322,6 +352,19 @@
       align-items: center;
     }
 
+    .history-search-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    .history-search-input:focus {
+      border-color: var(--accent-color);
+    }
+
     .modal h2 {
       font-size: 1.1rem;
       color: var(--text-main);
@@ -368,12 +411,23 @@
       background: #f8fafc;
       border: 1px solid var(--border-color);
       border-radius: 6px;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+    }
+
+    .history-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
     .history-item-name {
       font-weight: 600;
       color: var(--text-main);
+    }
+
+    .history-item-dates {
+      font-size: 0.75rem;
+      color: var(--text-muted);
     }
 
     .history-item-actions {
@@ -482,6 +536,8 @@
         <button class="btn-clear-all" onclick="clearAllHistory()">Limpar tudo</button>
       </div>
       
+      <input type="text" id="historySearch" class="history-search-input" placeholder="🔍 Pesquisar por nome do cliente..." oninput="renderHistory()">
+
       <div class="history-list" id="historyList">
         <!-- Lista de clientes concluídos inserida dinamicamente -->
       </div>
@@ -687,6 +743,15 @@
           saveState();
         };
 
+        const carInput = document.createElement('input');
+        carInput.className = 'card-car-input';
+        carInput.value = client.carModel || '';
+        carInput.placeholder = "Modelo do Carro";
+        carInput.onchange = (e) => {
+          clientsData[clientIndex].carModel = e.target.value;
+          saveState();
+        };
+
         const dateDisplay = document.createElement('div');
         dateDisplay.className = 'card-date';
 
@@ -697,6 +762,7 @@
         }
 
         titleBox.appendChild(titleInput);
+        titleBox.appendChild(carInput);
         titleBox.appendChild(dateDisplay);
 
         const actions = document.createElement('div');
@@ -730,6 +796,33 @@
           };
         }
 
+        actions.appendChild(actionBtn);
+
+        if (client.billed) {
+          const datePicker = document.createElement('input');
+          datePicker.type = 'date';
+          datePicker.className = 'date-picker-mini';
+          datePicker.title = "Definir data de entrega";
+          
+          if (client.deadline) {
+            const parts = client.deadline.split('/');
+            if (parts.length === 3) {
+              datePicker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+
+          datePicker.onchange = (e) => {
+            if (e.target.value) {
+              const [yyyy, mm, dd] = e.target.value.split('-');
+              clientsData[clientIndex].deadline = `${dd}/${mm}/${yyyy}`;
+              saveState();
+              render();
+            }
+          };
+
+          actions.appendChild(datePicker);
+        }
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn-icon';
         deleteBtn.style.color = '#ef4444';
@@ -742,7 +835,6 @@
           }
         };
 
-        actions.appendChild(actionBtn);
         actions.appendChild(deleteBtn);
 
         header.appendChild(titleBox);
@@ -833,6 +925,7 @@
 
       clientsData.push({
         name: 'Nome do Cliente',
+        carModel: '',
         date: todayStr,
         billed: false,
         billedDate: null,
@@ -865,6 +958,8 @@
     };
 
     window.openHistory = function() {
+      const historySearch = document.getElementById('historySearch');
+      if (historySearch) historySearch.value = '';
       renderHistory();
       document.getElementById('historyModal').style.display = 'flex';
     };
@@ -873,16 +968,19 @@
       document.getElementById('historyModal').style.display = 'none';
     };
 
-    function renderHistory() {
+    window.renderHistory = function() {
       const historyList = document.getElementById('historyList');
       historyList.innerHTML = '';
 
+      const searchTerm = (document.getElementById('historySearch')?.value || '').toLowerCase();
+
       const filteredClients = clientsData
         .map((client, originalIndex) => ({ ...client, originalIndex }))
-        .filter(client => client.collapsed);
+        .filter(client => client.collapsed)
+        .filter(client => (client.name || '').toLowerCase().includes(searchTerm) || (client.carModel || '').toLowerCase().includes(searchTerm));
 
       if (filteredClients.length === 0) {
-        historyList.innerHTML = '<div class="no-history">Nenhum processo concluído no histórico.</div>';
+        historyList.innerHTML = '<div class="no-history">Nenhum processo concluído encontrado.</div>';
         return;
       }
 
@@ -890,9 +988,19 @@
         const item = document.createElement('div');
         item.className = 'history-item';
 
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'history-item-info';
+
         const name = document.createElement('div');
         name.className = 'history-item-name';
-        name.innerText = client.name || 'Cliente sem nome';
+        name.innerText = `${client.name || 'Cliente sem nome'}${client.carModel ? ' - ' + client.carModel : ''}`;
+
+        const dates = document.createElement('div');
+        dates.className = 'history-item-dates';
+        dates.innerText = `Faturado: ${client.billedDate || 'N/A'} | Entregue: ${client.deliveryDate || 'N/A'}`;
+
+        infoDiv.appendChild(name);
+        infoDiv.appendChild(dates);
 
         const actionsDiv = document.createElement('div');
         actionsDiv.className = 'history-item-actions';
@@ -922,11 +1030,11 @@
         actionsDiv.appendChild(restoreBtn);
         actionsDiv.appendChild(deleteSingleBtn);
 
-        item.appendChild(name);
+        item.appendChild(infoDiv);
         item.appendChild(actionsDiv);
         historyList.appendChild(item);
       });
-    }
+    };
 
     window.clearAllHistory = function() {
       const hasHistory = clientsData.some(client => client.collapsed);
