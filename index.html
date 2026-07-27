@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gerenciador de Tarefas e Clientes</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #2c3e50;
+      --text-muted: #7f8c8d;
+      --border-color: #e2e8f0;
+      --accent-color: #2563eb;
+      --yellow-status: #f59e0b;
+      --green-status: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    button {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: #ffffff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-settings {
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .board {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    /* Estrutura dos Cards de Clientes */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    /* Estados de Cor por Faturamento e Prazo */
+    .card.status-billed {
+      background-color: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .card.status-warning {
+      background-color: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .card.status-danger {
+      background-color: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .card.status-overdue {
+      background-color: #fef2f2;
+      border-color: #ef4444;
+    }
+
+    /* Estado de Carro Entregue */
+    .card.collapsed {
+      display: none; 
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-title-input {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      border: 1px transparent;
+      border-radius: 4px;
+      width: 100%;
+      outline: none;
+      background: transparent;
+      padding: 2px 0;
+    }
+
+    .card-title-input:focus {
+      border-color: var(--accent-color);
+      background: #fff;
+    }
+
+    .card-date {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .btn-icon {
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .btn-billed {
+      background: #e0f2fe;
+      color: #0369a1;
+      border-color: #bae6fd;
+      font-weight: 600;
+    }
+
+    .card-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Tarefas dentro da caixa */
+    .task-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: var(--yellow-status);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .status-dot:active {
+      transform: scale(0.9);
+    }
+
+    .status-dot.completed {
+      background-color: var(--green-status);
+    }
+
+    .task-input {
+      border: none;
+      background: transparent;
+      color: var(--text-main);
+      width: 100%;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .task-input.completed-text {
+      color: var(--green-status);
+      text-decoration: none; 
+      font-weight: 500;
+    }
+
+    .btn-delete-task {
+      color: #ef4444;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0 2px;
+    }
+
+    .btn-delete-task:hover {
+      color: #dc2626;
+      background: transparent;
+    }
+
+    /* Botão Grande de Adicionar Caixa */
+    .btn-add-card {
+      border: 2px dashed #cbd5e1;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
+      height: 100px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-card:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: #ffffff;
+    }
+
+    /* Modais */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 380px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-large {
+      width: 550px;
+      max-width: 90vw;
+      max-height: 80vh;
+    }
+
+    .modal-header-history {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal h2 {
+      font-size: 1.1rem;
+      color: var(--text-main);
+    }
+
+    .modal label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .modal textarea {
+      width: 100%;
+      height: 90px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .history-list {
+      max-height: 350px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+
+    .history-item-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .history-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-restore {
+      background: #f1f5f9;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-clear-single {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-clear-single:hover {
+      background: #fca5a5;
+      color: #ffffff;
+    }
+
+    .btn-clear-all {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+    }
+
+    .btn-clear-all:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .no-history {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 20px 0;
+    }
+
+    /* Estilo de Carregamento */
+    .loading-overlay {
+      position: fixed;
+      top:0; left:0; width:100vw; height:100vh;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 600;
+      z-index: 2000;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loading" class="loading-overlay">Carregando dados na nuvem...</div>
+
+  <header>
+    <h1>Gerenciador de Tarefas por Cliente</h1>
+    <div class="controls">
+      <div id="userInfo" class="user-profile" style="display: none;">
+        <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+        <button onclick="logout()">Sair</button>
+      </div>
+      <button id="btnLogin" class="btn-primary" onclick="loginWithGoogle()" style="display: none;">Entrar com Google</button>
+      <button class="btn-settings" onclick="openHistory()" title="Histórico de Concluídos">📋 Histórico</button>
+      <button class="btn-settings" onclick="openSettings()" title="Configurações">⚙️</button>
+      <button onclick="exportData()">Exportar Backup (.json)</button>
+      <button onclick="document.getElementById('importFile').click()">Importar Backup</button>
+      <input type="file" id="importFile" style="display:none" onchange="importData(event)" accept=".json">
+    </div>
+  </header>
+
+  <main class="board" id="board">
+    <!-- Caixas dos clientes e botão de adicionar serão inseridos dinamicamente -->
+  </main>
+
+  <!-- Modal de Configurações -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2>Configurações Padrão</h2>
+      <div>
+        <label>Passo a passo padrão (um por linha):</label>
+        <textarea id="defaultTasksInput"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeSettings()">Cancelar</button>
+        <button class="btn-primary" onclick="saveSettings()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Histórico -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal modal-large">
+      <div class="modal-header-history">
+        <h2>Histórico de Processos Concluídos</h2>
+        <button class="btn-clear-all" onclick="clearAllHistory()">Limpar tudo</button>
+      </div>
+      
+      <div class="history-list" id="historyList">
+        <!-- Lista de clientes concluídos inserida dinamicamente -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="closeHistory()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts do Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBx0N1ebOkAzIIN921jHbBKX8fl9hSgbYs",
+      authDomain: "gerenciador-clientes-faa1f.firebaseapp.com",
+      projectId: "gerenciador-clientes-faa1f",
+      storageBucket: "gerenciador-clientes-faa1f.firebasestorage.app",
+      messagingSenderId: "687405413163",
+      appId: "1:687405413163:web:9ba94a25e39f3db8f7cb6e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+
+    let defaultTasks = JSON.parse(localStorage.getItem('app_default_tasks')) || [
+      "Faturar",
+      "Emplacamento",
+      "Entregar carro"
+    ];
+
+    let clientsData = JSON.parse(localStorage.getItem('app_clients_tasks')) || [];
+
+    // Funções de Autenticação e Nuvem
+    window.loginWithGoogle = async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.error("Erro no login:", err);
+        alert("Erro ao fazer login com o Google.");
+      }
+    };
+
+    window.logout = async () => {
+      await signOut(auth);
+      location.reload();
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      const loadingEl = document.getElementById('loading');
+      if (user) {
+        currentUser = user;
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('btnLogin').style.display = 'none';
+        document.getElementById('userAvatar').src = user.photoURL || '';
+
+        // Carrega os dados da nuvem
+        await loadCloudData();
+      } else {
+        currentUser = null;
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('btnLogin').style.display = 'block';
+      }
+      loadingEl.style.display = 'none';
+      render();
+    });
+
+    async function saveState() {
+      // Salva localmente primeiro
+      localStorage.setItem('app_clients_tasks', JSON.stringify(clientsData));
+
+      // Se estiver logado, salva na nuvem
+      if (currentUser) {
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), {
+            clientsData: clientsData,
+            defaultTasks: defaultTasks,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error("Erro ao salvar na nuvem:", err);
+        }
+      }
+    }
+
+    async function loadCloudData() {
+      if (!currentUser) return;
+      try {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.clientsData) {
+            clientsData = data.clientsData;
+            localStorage.setItem('app_clients_tasks', JSON.stringify(clientsData));
+          }
+          if (data.defaultTasks) {
+            defaultTasks = data.defaultTasks;
+            localStorage.setItem('app_default_tasks', JSON.stringify(defaultTasks));
+          }
+        } else {
+          // Se for o primeiro acesso do usuário, salva o que já tem local na nuvem
+          await saveState();
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados da nuvem:", err);
+      }
+    }
+
+    function addBusinessDays(startDate, days) {
+      let count = 0;
+      let currentDate = new Date(startDate);
+      while (count < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        const dayOfWeek = currentDate.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          count++;
+        }
+      }
+      return currentDate.toLocaleDateString('pt-BR');
+    }
+
+    function calculateDeadline(startDateStr, ruleOption) {
+      const parts = startDateStr.split('/');
+      const startDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      
+      if (ruleOption === "1") {
+        return addBusinessDays(startDate, 4);
+      } else if (ruleOption === "2") {
+        return addBusinessDays(startDate, 7);
+      } else if (ruleOption === "3") {
+        return prompt("Digite a data limite (ex: 25/12/2026):", startDateStr) || startDateStr;
+      }
+      return addBusinessDays(startDate, 4);
+    }
+
+    function getDaysRemaining(deadlineStr) {
+      if (!deadlineStr) return null;
+      const parts = deadlineStr.split('/');
+      const deadlineDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      deadlineDate.setHours(0, 0, 0, 0);
+
+      const diffTime = deadlineDate - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    function render() {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      clientsData.forEach((client, clientIndex) => {
+        const card = document.createElement('div');
+        let cardClass = 'card';
+
+        let deadlineStatusText = client.deadline || 'N/A';
+        
+        if (client.collapsed) {
+          cardClass += ' collapsed';
+        } else if (client.billed) {
+          const daysRemaining = getDaysRemaining(client.deadline);
+
+          if (daysRemaining !== null) {
+            if (daysRemaining < 0) {
+              cardClass += ' status-overdue';
+              deadlineStatusText = `${client.deadline} (Entrega atrasada)`;
+            } else if (daysRemaining <= 1) {
+              cardClass += ' status-danger';
+            } else if (daysRemaining <= 3) {
+              cardClass += ' status-warning';
+            } else {
+              cardClass += ' status-billed';
+            }
+          } else {
+            cardClass += ' status-billed';
+          }
+        }
+
+        card.className = cardClass;
+
+        const header = document.createElement('div');
+        header.className = 'card-header';
+
+        const titleBox = document.createElement('div');
+        titleBox.style.flex = "1";
+
+        const titleInput = document.createElement('input');
+        titleInput.className = 'card-title-input';
+        titleInput.value = client.name;
+        titleInput.placeholder = "Nome do Cliente";
+        titleInput.onchange = (e) => {
+          clientsData[clientIndex].name = e.target.value;
+          saveState();
+        };
+
+        const dateDisplay = document.createElement('div');
+        dateDisplay.className = 'card-date';
+
+        if (client.billed) {
+          dateDisplay.innerHTML = `Faturado: ${client.billedDate}<br>Prazo: ${deadlineStatusText}`;
+        } else {
+          dateDisplay.innerHTML = `Criado: ${client.date}<br>Prazo: Aguardando faturamento`;
+        }
+
+        titleBox.appendChild(titleInput);
+        titleBox.appendChild(dateDisplay);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const actionBtn = document.createElement('button');
+        
+        if (!client.billed) {
+          actionBtn.className = 'btn-icon';
+          actionBtn.innerText = 'Faturar';
+          actionBtn.onclick = () => {
+            if (confirm(`Deseja confirmar o faturamento para ${client.name}?`)) {
+              const todayStr = new Date().toLocaleDateString('pt-BR');
+              clientsData[clientIndex].billed = true;
+              clientsData[clientIndex].billedDate = todayStr;
+              clientsData[clientIndex].deadline = calculateDeadline(todayStr, client.deadlineRule || "1");
+              saveState();
+              render();
+            }
+          };
+        } else {
+          actionBtn.className = 'btn-icon';
+          actionBtn.innerText = 'Entrega';
+          actionBtn.onclick = () => {
+            if (confirm(`Deseja confirmar a entrega do veículo para ${client.name}?`)) {
+              clientsData[clientIndex].collapsed = true;
+              clientsData[clientIndex].deliveryDate = new Date().toLocaleDateString('pt-BR');
+              saveState();
+              render();
+            }
+          };
+        }
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-icon';
+        deleteBtn.style.color = '#ef4444';
+        deleteBtn.innerText = '×';
+        deleteBtn.onclick = () => {
+          if (confirm(`Deseja remover ${client.name}?`)) {
+            clientsData.splice(clientIndex, 1);
+            saveState();
+            render();
+          }
+        };
+
+        actions.appendChild(actionBtn);
+        actions.appendChild(deleteBtn);
+
+        header.appendChild(titleBox);
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'card-body';
+
+        client.tasks.forEach((task, taskIndex) => {
+          const item = document.createElement('div');
+          item.className = 'task-item';
+
+          const dot = document.createElement('div');
+          dot.className = `status-dot ${task.done ? 'completed' : ''}`;
+          dot.onclick = () => {
+            clientsData[clientIndex].tasks[taskIndex].done = !clientsData[clientIndex].tasks[taskIndex].done;
+            saveState();
+            render();
+          };
+
+          const input = document.createElement('input');
+          input.className = `task-input ${task.done ? 'completed-text' : ''}`;
+          input.value = task.text;
+          input.placeholder = "Descrição da tarefa...";
+          input.onchange = (e) => {
+            clientsData[clientIndex].tasks[taskIndex].text = e.target.value;
+            saveState();
+          };
+
+          const removeTaskBtn = document.createElement('button');
+          removeTaskBtn.className = 'btn-delete-task';
+          removeTaskBtn.innerText = '×';
+          removeTaskBtn.onclick = () => {
+            clientsData[clientIndex].tasks.splice(taskIndex, 1);
+            saveState();
+            render();
+          };
+
+          item.appendChild(dot);
+          item.appendChild(input);
+          item.appendChild(removeTaskBtn);
+          body.appendChild(item);
+        });
+
+        card.appendChild(body);
+
+        const addTaskBtn = document.createElement('button');
+        addTaskBtn.className = 'add-task-btn';
+        addTaskBtn.style.width = '100%';
+        addTaskBtn.style.marginTop = '4px';
+        addTaskBtn.style.fontSize = '0.8rem';
+        addTaskBtn.style.padding = '4px 8px';
+        addTaskBtn.innerText = '+ Adicionar Tarefa';
+        addTaskBtn.onclick = () => {
+          clientsData[clientIndex].tasks.push({ text: '', done: false });
+          saveState();
+          render();
+        };
+
+        card.appendChild(addTaskBtn);
+        board.appendChild(card);
+      });
+
+      // Renderiza o botão "+ Adicionar Cliente"
+      const addClientBtn = document.createElement('button');
+      addClientBtn.className = 'btn-add-card';
+      addClientBtn.innerText = '+ Adicionar Cliente';
+      addClientBtn.onclick = createNewClient;
+      board.appendChild(addClientBtn);
+    }
+
+    function createNewClient() {
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('pt-BR');
+
+      const option = prompt(
+        "Selecione a regra de prazo limite:\n\n" +
+        "1 - Sem emplacamento (04 dias úteis)\n" +
+        "2 - Com emplacamento (07 dias úteis)\n" +
+        "3 - Personalizado (digite a data DD/MM/AAAA)",
+        "1"
+      );
+
+      if (option === null) return;
+
+      const initialTasks = defaultTasks.map(taskText => ({ text: taskText, done: false }));
+
+      clientsData.push({
+        name: 'Nome do Cliente',
+        date: todayStr,
+        billed: false,
+        billedDate: null,
+        deadlineRule: option,
+        deadline: null,
+        deliveryDate: null,
+        collapsed: false,
+        tasks: initialTasks
+      });
+
+      saveState();
+      render();
+    }
+
+    window.openSettings = function() {
+      document.getElementById('defaultTasksInput').value = defaultTasks.join('\n');
+      document.getElementById('settingsModal').style.display = 'flex';
+    };
+
+    window.closeSettings = function() {
+      document.getElementById('settingsModal').style.display = 'none';
+    };
+
+    window.saveSettings = function() {
+      const text = document.getElementById('defaultTasksInput').value;
+      defaultTasks = text.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+      localStorage.setItem('app_default_tasks', JSON.stringify(defaultTasks));
+      saveState();
+      closeSettings();
+    };
+
+    window.openHistory = function() {
+      renderHistory();
+      document.getElementById('historyModal').style.display = 'flex';
+    };
+
+    window.closeHistory = function() {
+      document.getElementById('historyModal').style.display = 'none';
+    };
+
+    function renderHistory() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '';
+
+      const filteredClients = clientsData
+        .map((client, originalIndex) => ({ ...client, originalIndex }))
+        .filter(client => client.collapsed);
+
+      if (filteredClients.length === 0) {
+        historyList.innerHTML = '<div class="no-history">Nenhum processo concluído no histórico.</div>';
+        return;
+      }
+
+      filteredClients.forEach(client => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        const name = document.createElement('div');
+        name.className = 'history-item-name';
+        name.innerText = client.name || 'Cliente sem nome';
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'history-item-actions';
+
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'btn-restore';
+        restoreBtn.innerText = 'Reabrir';
+        restoreBtn.onclick = () => {
+          clientsData[client.originalIndex].collapsed = false;
+          saveState();
+          render();
+          renderHistory();
+        };
+
+        const deleteSingleBtn = document.createElement('button');
+        deleteSingleBtn.className = 'btn-clear-single';
+        deleteSingleBtn.innerText = 'Limpar';
+        deleteSingleBtn.onclick = () => {
+          if (confirm(`Deseja apagar permanentemente ${client.name} do histórico?`)) {
+            clientsData.splice(client.originalIndex, 1);
+            saveState();
+            render();
+            renderHistory();
+          }
+        };
+
+        actionsDiv.appendChild(restoreBtn);
+        actionsDiv.appendChild(deleteSingleBtn);
+
+        item.appendChild(name);
+        item.appendChild(actionsDiv);
+        historyList.appendChild(item);
+      });
+    }
+
+    window.clearAllHistory = function() {
+      const hasHistory = clientsData.some(client => client.collapsed);
+      if (!hasHistory) return;
+
+      if (confirm('Deseja apagar TODOS os processos concluídos do histórico?')) {
+        clientsData = clientsData.filter(client => !client.collapsed);
+        saveState();
+        render();
+        renderHistory();
+      }
+    };
+
+    window.exportData = function() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(clientsData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `tarefas_clientes_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    };
+
+    window.importData = function(event) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(e) {
+        try {
+          clientsData = JSON.parse(e.target.result);
+          saveState();
+          render();
+        } catch (err) {
+          alert('Erro ao carregar arquivo. Certifique-se de que é um backup válido.');
+        }
+      };
+      fileReader.readAsText(event.target.files[0]);
+    };
+  </script>
+</body>
+</html>
