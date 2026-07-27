@@ -137,7 +137,7 @@
     }
 
     .card.status-overdue {
-      background-color: #fef2f2;
+      background-color: #fee2e2;
       border-color: #ef4444;
     }
 
@@ -203,26 +203,32 @@
       flex-shrink: 0;
     }
 
-    .date-picker-mini {
-      border: 1px solid var(--border-color);
+    /* Botão de Calendário Customizado */
+    .btn-calendar-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      font-size: 0.85rem;
       border-radius: 4px;
-      padding: 0;
-      font-size: 0;
-      color: transparent;
-      outline: none;
-      background: #fff;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
       cursor: pointer;
-      width: 28px;
-      height: 24px;
-      flex-shrink: 0;
+      position: relative;
     }
 
-    .date-picker-mini::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      margin: 0;
-      padding: 0;
+    .btn-calendar-trigger:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-calendar-trigger input[type="date"] {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
+      opacity: 0;
+      cursor: pointer;
     }
 
     .btn-icon {
@@ -230,13 +236,6 @@
       font-size: 0.75rem;
       border-radius: 4px;
       line-height: 1;
-    }
-
-    .btn-billed {
-      background: #e0f2fe;
-      color: #0369a1;
-      border-color: #bae6fd;
-      font-weight: 600;
     }
 
     .card-body {
@@ -613,7 +612,6 @@
         document.getElementById('btnLogin').style.display = 'none';
         document.getElementById('userAvatar').src = user.photoURL || '';
 
-        // Carrega os dados da nuvem
         await loadCloudData();
       } else {
         currentUser = null;
@@ -625,10 +623,8 @@
     });
 
     async function saveState() {
-      // Salva localmente primeiro
       localStorage.setItem('app_clients_tasks', JSON.stringify(clientsData));
 
-      // Se estiver logado, salva na nuvem
       if (currentUser) {
         try {
           await setDoc(doc(db, "users", currentUser.uid), {
@@ -659,7 +655,6 @@
             localStorage.setItem('app_default_tasks', JSON.stringify(defaultTasks));
           }
         } else {
-          // Se for o primeiro acesso do usuário, salva o que já tem local na nuvem
           await saveState();
         }
       } catch (err) {
@@ -748,7 +743,6 @@
         titleInput.value = client.name;
         titleInput.placeholder = "Nome do Cliente";
         
-        // Identificador para automação de foco
         if (autoFocusIndex === clientIndex) {
           titleInput.id = `client-title-input-${clientIndex}`;
         }
@@ -762,8 +756,6 @@
         carInput.className = 'card-car-input';
         carInput.value = client.carModel || '';
         carInput.placeholder = "Modelo do Carro";
-        
-        // Identificador para mudança via Enter
         carInput.id = `client-car-input-${clientIndex}`;
 
         carInput.onchange = (e) => {
@@ -771,7 +763,6 @@
           saveState();
         };
 
-        // Evento de Enter para ir do Nome para o Carro
         titleInput.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
@@ -828,10 +819,14 @@
 
         actions.appendChild(actionBtn);
 
+        // Ícone e Botão de Calendário Corrigido
+        const calendarWrapper = document.createElement('div');
+        calendarWrapper.className = 'btn-calendar-trigger';
+        calendarWrapper.innerHTML = '📅';
+        calendarWrapper.title = "Alterar Data do Prazo";
+
         const datePicker = document.createElement('input');
         datePicker.type = 'date';
-        datePicker.className = 'date-picker-mini';
-        datePicker.title = "Definir data de entrega";
         
         if (client.deadline) {
           const parts = client.deadline.split('/');
@@ -849,7 +844,8 @@
           }
         };
 
-        actions.appendChild(datePicker);
+        calendarWrapper.appendChild(datePicker);
+        actions.appendChild(calendarWrapper);
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn-icon';
@@ -927,14 +923,12 @@
         board.appendChild(card);
       });
 
-      // Renderiza o botão "+ Adicionar Cliente"
       const addClientBtn = document.createElement('button');
       addClientBtn.className = 'btn-add-card';
       addClientBtn.innerText = '+ Adicionar Cliente';
       addClientBtn.onclick = createNewClient;
       board.appendChild(addClientBtn);
 
-      // Aplica o foco automático no input recém-criado
       if (autoFocusIndex !== null) {
         setTimeout(() => {
           const newTitleInput = document.getElementById(`client-title-input-${autoFocusIndex}`);
