@@ -150,6 +150,7 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 8px;
     }
 
     .card-title-input {
@@ -199,18 +200,29 @@
       display: flex;
       gap: 4px;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .date-picker-mini {
       border: 1px solid var(--border-color);
       border-radius: 4px;
-      padding: 2px 4px;
-      font-size: 0.75rem;
+      padding: 0;
+      font-size: 0;
+      color: transparent;
       outline: none;
       background: #fff;
       cursor: pointer;
-      width: 32px;
+      width: 28px;
       height: 24px;
+      flex-shrink: 0;
+    }
+
+    .date-picker-mini::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
     }
 
     .btn-icon {
@@ -676,8 +688,6 @@
         return addBusinessDays(startDate, 4);
       } else if (ruleOption === "2") {
         return addBusinessDays(startDate, 7);
-      } else if (ruleOption === "3") {
-        return prompt("Digite a data limite (ex: 25/12/2026):", startDateStr) || startDateStr;
       }
       return addBusinessDays(startDate, 4);
     }
@@ -695,7 +705,7 @@
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    function render() {
+    function render(autoFocusIndex = null) {
       const board = document.getElementById('board');
       board.innerHTML = '';
 
@@ -713,7 +723,6 @@
           if (daysRemaining !== null) {
             if (daysRemaining < 0) {
               cardClass += ' status-overdue';
-              deadlineStatusText = `${client.deadline} (Entrega atrasada)`;
             } else if (daysRemaining <= 1) {
               cardClass += ' status-danger';
             } else if (daysRemaining <= 3) {
@@ -738,6 +747,12 @@
         titleInput.className = 'card-title-input';
         titleInput.value = client.name;
         titleInput.placeholder = "Nome do Cliente";
+        
+        // Identificador para automação de foco
+        if (autoFocusIndex === clientIndex) {
+          titleInput.id = `client-title-input-${clientIndex}`;
+        }
+
         titleInput.onchange = (e) => {
           clientsData[clientIndex].name = e.target.value;
           saveState();
@@ -747,9 +762,22 @@
         carInput.className = 'card-car-input';
         carInput.value = client.carModel || '';
         carInput.placeholder = "Modelo do Carro";
+        
+        // Identificador para mudança via Enter
+        carInput.id = `client-car-input-${clientIndex}`;
+
         carInput.onchange = (e) => {
           clientsData[clientIndex].carModel = e.target.value;
           saveState();
+        };
+
+        // Evento de Enter para ir do Nome para o Carro
+        titleInput.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            carInput.focus();
+            carInput.select();
+          }
         };
 
         const dateDisplay = document.createElement('div');
@@ -905,23 +933,26 @@
       addClientBtn.innerText = '+ Adicionar Cliente';
       addClientBtn.onclick = createNewClient;
       board.appendChild(addClientBtn);
+
+      // Aplica o foco automático no input recém-criado
+      if (autoFocusIndex !== null) {
+        setTimeout(() => {
+          const newTitleInput = document.getElementById(`client-title-input-${autoFocusIndex}`);
+          if (newTitleInput) {
+            newTitleInput.focus();
+            newTitleInput.select();
+          }
+        }, 50);
+      }
     }
 
     function createNewClient() {
       const today = new Date();
       const todayStr = today.toLocaleDateString('pt-BR');
 
-      const option = prompt(
-        "Selecione a regra de prazo limite:\n\n" +
-        "1 - Sem emplacamento (04 dias úteis)\n" +
-        "2 - Com emplacamento (07 dias úteis)\n" +
-        "3 - Personalizado (digite a data DD/MM/AAAA)",
-        "1"
-      );
-
-      if (option === null) return;
-
       const initialTasks = defaultTasks.map(taskText => ({ text: taskText, done: false }));
+
+      const newIndex = clientsData.length;
 
       clientsData.push({
         name: 'Nome do Cliente',
@@ -929,7 +960,7 @@
         date: todayStr,
         billed: false,
         billedDate: null,
-        deadlineRule: option,
+        deadlineRule: "1",
         deadline: null,
         deliveryDate: null,
         collapsed: false,
@@ -937,7 +968,7 @@
       });
 
       saveState();
-      render();
+      render(newIndex);
     }
 
     window.openSettings = function() {
