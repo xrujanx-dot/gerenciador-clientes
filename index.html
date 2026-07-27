@@ -713,11 +713,11 @@
         const card = document.createElement('div');
         let cardClass = 'card';
 
-        let deadlineStatusText = client.deadline || 'N/A';
+        let deadlineStatusText = client.deadline || 'Aguardando definição';
         
         if (client.collapsed) {
           cardClass += ' collapsed';
-        } else if (client.billed) {
+        } else {
           const daysRemaining = getDaysRemaining(client.deadline);
 
           if (daysRemaining !== null) {
@@ -730,7 +730,7 @@
             } else {
               cardClass += ' status-billed';
             }
-          } else {
+          } else if (client.billed) {
             cardClass += ' status-billed';
           }
         }
@@ -786,7 +786,7 @@
         if (client.billed) {
           dateDisplay.innerHTML = `Faturado: ${client.billedDate}<br>Prazo: ${deadlineStatusText}`;
         } else {
-          dateDisplay.innerHTML = `Criado: ${client.date}<br>Prazo: Aguardando faturamento`;
+          dateDisplay.innerHTML = `Criado: ${client.date}<br>Prazo: ${deadlineStatusText}`;
         }
 
         titleBox.appendChild(titleInput);
@@ -806,7 +806,9 @@
               const todayStr = new Date().toLocaleDateString('pt-BR');
               clientsData[clientIndex].billed = true;
               clientsData[clientIndex].billedDate = todayStr;
-              clientsData[clientIndex].deadline = calculateDeadline(todayStr, client.deadlineRule || "1");
+              if (!clientsData[clientIndex].deadline) {
+                clientsData[clientIndex].deadline = calculateDeadline(todayStr, client.deadlineRule || "1");
+              }
               saveState();
               render();
             }
@@ -826,30 +828,28 @@
 
         actions.appendChild(actionBtn);
 
-        if (client.billed) {
-          const datePicker = document.createElement('input');
-          datePicker.type = 'date';
-          datePicker.className = 'date-picker-mini';
-          datePicker.title = "Definir data de entrega";
-          
-          if (client.deadline) {
-            const parts = client.deadline.split('/');
-            if (parts.length === 3) {
-              datePicker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-            }
+        const datePicker = document.createElement('input');
+        datePicker.type = 'date';
+        datePicker.className = 'date-picker-mini';
+        datePicker.title = "Definir data de entrega";
+        
+        if (client.deadline) {
+          const parts = client.deadline.split('/');
+          if (parts.length === 3) {
+            datePicker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
           }
-
-          datePicker.onchange = (e) => {
-            if (e.target.value) {
-              const [yyyy, mm, dd] = e.target.value.split('-');
-              clientsData[clientIndex].deadline = `${dd}/${mm}/${yyyy}`;
-              saveState();
-              render();
-            }
-          };
-
-          actions.appendChild(datePicker);
         }
+
+        datePicker.onchange = (e) => {
+          if (e.target.value) {
+            const [yyyy, mm, dd] = e.target.value.split('-');
+            clientsData[clientIndex].deadline = `${dd}/${mm}/${yyyy}`;
+            saveState();
+            render();
+          }
+        };
+
+        actions.appendChild(datePicker);
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn-icon';
