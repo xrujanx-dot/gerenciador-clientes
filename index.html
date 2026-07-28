@@ -3,502 +3,1099 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gerenciador de Tarefas e Agenda</title>
+  <title>Gerenciador de Tarefas e Clientes</title>
   <style>
     :root {
       --bg-color: #f4f6f9;
       --card-bg: #ffffff;
-      --text-color: #333333;
-      --accent-color: #2196f3;
-      --border-radius: 12px;
-      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --text-main: #2c3e50;
+      --text-muted: #7f8c8d;
+      --border-color: #e2e8f0;
+      --accent-color: #2563eb;
+      --yellow-status: #f59e0b;
+      --green-status: #10b981;
     }
 
     * {
       box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
     body {
       background-color: var(--bg-color);
-      color: var(--text-color);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      color: var(--text-main);
+      padding: 24px;
     }
 
-    /* Cabeçalho Superior */
     header {
-      background: #ffffff;
-      padding: 12px 20px;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid #e0e0e0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-left {
-      display: flex;
       align-items: center;
-      gap: 15px;
-    }
-
-    .menu-btn, .gear-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #555;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
+      background: var(--card-bg);
+      padding: 16px 24px;
       border-radius: 8px;
-      transition: background 0.2s;
-    }
-
-    .menu-btn:hover, .gear-btn:hover {
-      background: #f0f0f0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 24px;
     }
 
     h1 {
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       font-weight: 600;
     }
 
-    /* Sidebar / Menu Lateral */
-    .sidebar {
-      position: fixed;
-      top: 0;
-      left: -280px;
-      width: 280px;
-      height: 100%;
+    .controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+    }
+
+    button {
       background: #ffffff;
-      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-      transition: left 0.3s ease;
-      z-index: 200;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .sidebar.open {
-      left: 0;
-    }
-
-    .sidebar-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.3);
-      display: none;
-      z-index: 150;
-    }
-
-    .sidebar-overlay.active {
-      display: block;
-    }
-
-    .sidebar-menu {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .sidebar-menu li {
-      padding: 12px 16px;
-      border-radius: 8px;
-      cursor: pointer;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 16px;
+      border-radius: 6px;
       font-weight: 500;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background 0.2s;
-    }
-
-    .sidebar-menu li:hover, .sidebar-menu li.active {
-      background: #e3f2fd;
-      color: var(--accent-color);
-    }
-
-    /* Menu da Engrenagem Modal */
-    .gear-menu {
-      position: absolute;
-      top: 60px;
-      right: 20px;
-      background: #ffffff;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      border: 1px solid #e0e0e0;
-      display: none;
-      flex-direction: column;
-      width: 220px;
-      z-index: 101;
-      overflow: hidden;
-    }
-
-    .gear-menu.active {
-      display: flex;
-    }
-
-    .gear-menu button {
-      padding: 12px 16px;
-      border: none;
-      background: none;
-      text-align: left;
+      font-size: 0.875rem;
       cursor: pointer;
-      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .btn-primary {
+      background: var(--accent-color);
+      color: #ffffff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+
+    .btn-settings {
+      padding: 8px 12px;
+      font-size: 1.1rem;
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
     }
 
-    .gear-menu button:hover {
-      background: #f5f5f5;
-    }
-
-    /* Áreas de Conteúdo Principal */
-    main {
-      padding: 20px;
-      flex: 1;
-      /* Ajuste de escala para simular visão padrão em 80% no desktop */
-      transform: scale(0.92);
-      transform-origin: top center;
-    }
-
-    .page {
-      display: none;
-    }
-
-    .page.active {
-      display: block;
-    }
-
-    /* Grid do Quadro Kanban / Cards */
-    .kanban-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    .board {
+      display: flex;
+      flex-wrap: wrap;
       gap: 16px;
-      align-items: start;
+      align-items: flex-start;
     }
 
-    /* Modo Mobile Forçado ou Responsivo Natural */
-    body.mobile-mode .kanban-grid,
-    @media (max-width: 768px) {
-      main {
-        transform: none; /* Desativa a escala no celular */
-        padding: 10px;
-      }
-      .kanban-grid {
-        grid-template-columns: repeat(2, 1fr) !important; /* 02 em 02 bloquinhos */
-        gap: 10px;
-      }
-    }
-
-    /* Card de Cliente */
+    /* Estrutura dos Cards de Clientes */
     .card {
-      background: var(--card-bg);
-      border-radius: var(--border-radius);
-      padding: 14px;
-      border: 1px solid #e2e8f0;
-      box-shadow: var(--shadow);
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
+      padding: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      position: relative;
+      gap: 10px;
+      transition: all 0.2s;
     }
 
-    .card.status-faturar { background-color: #ffffff; }
-    .card.status-faturado { background-color: #fffde7; border-color: #ffe082; }
-    .card.status-entrega { background-color: #ffebee; border-color: #ffcdd2; }
+    /* Estados de Cor por Faturamento e Prazo */
+    .card.status-billed {
+      background-color: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .card.status-warning {
+      background-color: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .card.status-danger {
+      background-color: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .card.status-overdue {
+      background-color: #fee2e2;
+      border-color: #ef4444;
+    }
+
+    /* Estado de Carro Entregue */
+    .card.collapsed {
+      display: none; 
+    }
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
+      gap: 8px;
     }
 
-    .card-title {
-      font-weight: 700;
-      font-size: 1rem;
-    }
-
-    .card-sub {
-      font-size: 0.8rem;
-      color: #666;
-    }
-
-    .badge {
-      font-size: 0.7rem;
-      padding: 3px 6px;
+    .card-title-input {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      border: 1px transparent;
       border-radius: 4px;
-      border: 1px solid #ccc;
+      width: 100%;
+      outline: none;
+      background: transparent;
+      padding: 2px 0;
+    }
+
+    .card-title-input:focus {
+      border-color: var(--accent-color);
       background: #fff;
     }
 
-    .task-list {
+    .card-car-input {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      border: 1px transparent;
+      border-radius: 4px;
+      width: 100%;
+      outline: none;
+      background: transparent;
+      padding: 1px 0;
+      margin-bottom: 2px;
+    }
+
+    .card-car-input:focus {
+      border-color: var(--accent-color);
+      background: #fff;
+    }
+
+    .card-date {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.3;
+      white-space: nowrap;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    /* Botão de Calendário Customizado */
+    .btn-calendar-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      border-radius: 4px;
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .btn-calendar-trigger:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-calendar-trigger input[type="date"] {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .btn-icon {
+      padding: 4px 6px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .card-body {
       display: flex;
       flex-direction: column;
       gap: 6px;
-      margin-top: 6px;
     }
 
+    /* Tarefas dentro da caixa */
     .task-item {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      background: rgba(255,255,255,0.7);
-      padding: 6px 10px;
-      border-radius: 20px;
-      font-size: 0.82rem;
-      border: 1px solid #eee;
-    }
-
-    .btn-add-task {
-      margin-top: 8px;
-      background: #ffffff;
-      border: 1px dashed #cccccc;
-      border-radius: 8px;
-      padding: 8px;
-      cursor: pointer;
-      text-align: center;
-      font-size: 0.85rem;
-      color: #555;
-    }
-
-    .btn-add-task:hover {
-      background: #f9f9f9;
-    }
-
-    /* Página: Agenda do Dia */
-    .agenda-container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 20px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow);
-    }
-
-    .agenda-form {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .agenda-form input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.6);
+      padding: 6px 8px;
       border-radius: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
-    .agenda-form button {
-      padding: 10px 16px;
-      background: var(--accent-color);
-      color: white;
+    .status-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: var(--yellow-status);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .status-dot:active {
+      transform: scale(0.9);
+    }
+
+    .status-dot.completed {
+      background-color: var(--green-status);
+    }
+
+    .task-input {
       border: none;
-      border-radius: 6px;
+      background: transparent;
+      color: var(--text-main);
+      width: 100%;
+      font-size: 0.8rem;
+      outline: none;
+    }
+
+    .task-input.completed-text {
+      color: var(--green-status);
+      text-decoration: none; 
+      font-weight: 500;
+    }
+
+    .btn-delete-task {
+      color: #ef4444;
+      border: none;
+      background: transparent;
       cursor: pointer;
+      font-size: 1rem;
+      padding: 0 2px;
     }
 
-    .agenda-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    .btn-delete-task:hover {
+      color: #dc2626;
+      background: transparent;
     }
 
-    .agenda-item {
+    /* Botão Grande de Adicionar Caixa */
+    .btn-add-card {
+      border: 2px dashed #cbd5e1;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
+      height: 100px;
+      border-radius: 8px;
       display: flex;
       align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-add-card:hover {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+      background: #ffffff;
+    }
+
+    /* Modais */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 380px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-large {
+      width: 550px;
+      max-width: 90vw;
+      max-height: 80vh;
+    }
+
+    .modal-header-history {
+      display: flex;
       justify-content: space-between;
-      padding: 12px;
-      background: #f9f9f9;
+      align-items: center;
+    }
+
+    .history-search-input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
       border-radius: 6px;
-      border-left: 4px solid var(--accent-color);
+      font-size: 0.85rem;
+      outline: none;
     }
 
-    .agenda-item.done {
-      text-decoration: line-through;
-      opacity: 0.6;
-      border-left-color: #4caf50;
+    .history-search-input:focus {
+      border-color: var(--accent-color);
     }
 
-    /* Formatação para Impressão / PDF */
-    @media print {
-      header, .sidebar, .gear-menu, .btn-add-task, .agenda-form {
-        display: none !important;
-      }
-      main {
-        transform: none !important;
-        padding: 0 !important;
-      }
-      .kanban-grid {
-        grid-template-columns: repeat(3, 1fr) !important;
-      }
+    .modal h2 {
+      font-size: 1.1rem;
+      color: var(--text-main);
+    }
+
+    .modal label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .modal textarea {
+      width: 100%;
+      height: 90px;
+      padding: 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      resize: vertical;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .history-list {
+      max-height: 350px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .history-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .history-item-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .history-item-dates {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .history-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-restore {
+      background: #f1f5f9;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-clear-single {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .btn-clear-single:hover {
+      background: #fca5a5;
+      color: #ffffff;
+    }
+
+    .btn-clear-all {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fca5a5;
+      font-size: 0.8rem;
+      padding: 4px 10px;
+    }
+
+    .btn-clear-all:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    .no-history {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 20px 0;
+    }
+
+    /* Estilo de Carregamento */
+    .loading-overlay {
+      position: fixed;
+      top:0; left:0; width:100vw; height:100vh;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-weight: 600;
+      z-index: 2000;
     }
   </style>
 </head>
 <body>
 
-  <!-- Cabeçalho -->
-  <header>
-    <div class="header-left">
-      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-      <h1 id="page-title">Quadro de Clientes</h1>
-    </div>
-    <button class="gear-btn" onclick="toggleGearMenu()">⚙</button>
+  <div id="loading" class="loading-overlay">Carregando dados na nuvem...</div>
 
-    <!-- Menu Dropdown da Engrenagem -->
-    <div class="gear-menu" id="gearMenu">
-      <button onclick="exportToPDF()">📄 Baixar PDF</button>
-      <button onclick="toggleMobileView()">📱 Alternar Layout Mobile</button>
+  <header>
+    <h1>Gerenciador de Tarefas por Cliente</h1>
+    <div class="controls">
+      <div id="userInfo" class="user-profile" style="display: none;">
+        <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+        <button onclick="logout()">Sair</button>
+      </div>
+      <button id="btnLogin" class="btn-primary" onclick="loginWithGoogle()" style="display: none;">Entrar com Google</button>
+      <button class="btn-settings" onclick="openHistory()" title="Histórico de Concluídos">📋 Histórico</button>
+      <button class="btn-settings" onclick="openSettings()" title="Configurações">⚙️</button>
+      <button onclick="exportData()">Exportar Backup (.json)</button>
+      <button onclick="document.getElementById('importFile').click()">Importar Backup</button>
+      <input type="file" id="importFile" style="display:none" onchange="importData(event)" accept=".json">
     </div>
   </header>
 
-  <!-- Overlay e Menu Lateral -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-  <div class="sidebar" id="sidebar">
-    <h2>Navegação</h2>
-    <ul class="sidebar-menu">
-      <li id="menu-quadro" class="active" onclick="switchPage('quadro', 'Quadro de Clientes')">
-        📋 Quadro de Clientes
-      </li>
-      <li id="menu-agenda" onclick="switchPage('agenda', 'Agenda do Dia')">
-        📅 Agenda do Dia
-      </li>
-    </ul>
-  </div>
-
-  <!-- Conteúdo Principal -->
-  <main>
-    <!-- Página 1: Quadro Kanban -->
-    <div id="page-quadro" class="page active">
-      <div class="kanban-grid" id="kanbanGrid">
-        <!-- Exemplo de Card -->
-        <div class="card status-faturar">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Francisco Morais</div>
-              <div class="card-sub">Mobi Like (Cat 36)</div>
-            </div>
-            <span class="badge">Faturar</span>
-          </div>
-          <div class="card-sub">Criado: 27/07/2026</div>
-          <div class="task-list">
-            <div class="task-item">🟡 Faturamento de fábrica</div>
-          </div>
-          <button class="btn-add-task">+ Adicionar Tarefa</button>
-        </div>
-
-        <div class="card status-faturado">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Geni Carmen</div>
-              <div class="card-sub">Argo Drive</div>
-            </div>
-            <span class="badge">Faturar</span>
-          </div>
-          <div class="card-sub">Criado: 27/07/2026</div>
-          <div class="task-list">
-            <div class="task-item">🟡 Pagamento do Banco</div>
-            <div class="task-item">🟡 Emplacamento</div>
-          </div>
-          <button class="btn-add-task">+ Adicionar Tarefa</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Página 2: Agenda do Dia -->
-    <div id="page-agenda" class="page">
-      <div class="agenda-container">
-        <h2>Tarefas do Dia</h2>
-        <br>
-        <form class="agenda-form" onsubmit="addAgendaItem(event)">
-          <input type="text" id="agendaInput" placeholder="Digite uma tarefa para hoje..." required>
-          <button type="submit">Adicionar</button>
-        </form>
-
-        <ul class="agenda-list" id="agendaList">
-          <!-- Tarefas da agenda serão inseridas aqui -->
-        </ul>
-      </div>
-    </div>
+  <main class="board" id="board">
+    <!-- Caixas dos clientes e botão de adicionar serão inseridos dinamicamente -->
   </main>
 
-  <script>
-    // Controle do Menu Lateral
-    function toggleSidebar() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('sidebarOverlay').classList.toggle('active');
+  <!-- Modal de Configurações -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2>Configurações Padrão</h2>
+      <div>
+        <label>Passo a passo padrão (um por linha):</label>
+        <textarea id="defaultTasksInput"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button onclick="closeSettings()">Cancelar</button>
+        <button class="btn-primary" onclick="saveSettings()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Histórico -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal modal-large">
+      <div class="modal-header-history">
+        <h2>Histórico de Processos Concluídos</h2>
+        <button class="btn-clear-all" onclick="clearAllHistory()">Limpar tudo</button>
+      </div>
+      
+      <input type="text" id="historySearch" class="history-search-input" placeholder="🔍 Pesquisar por nome do cliente..." oninput="renderHistory()">
+
+      <div class="history-list" id="historyList">
+        <!-- Lista de clientes concluídos inserida dinamicamente -->
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-primary" onclick="closeHistory()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts do Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBx0N1ebOkAzIIN921jHbBKX8fl9hSgbYs",
+      authDomain: "gerenciador-clientes-faa1f.firebaseapp.com",
+      projectId: "gerenciador-clientes-faa1f",
+      storageBucket: "gerenciador-clientes-faa1f.firebasestorage.app",
+      messagingSenderId: "687405413163",
+      appId: "1:687405413163:web:9ba94a25e39f3db8f7cb6e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    let currentUser = null;
+
+    let defaultTasks = JSON.parse(localStorage.getItem('app_default_tasks')) || [
+      "Faturar",
+      "Emplacamento",
+      "Entregar carro"
+    ];
+
+    let clientsData = JSON.parse(localStorage.getItem('app_clients_tasks')) || [];
+
+    // Funções de Autenticação e Nuvem
+    window.loginWithGoogle = async () => {
+      try {
+        await signInWithPopup(auth, provider);
+      } catch (err) {
+        console.error("Erro no login:", err);
+        alert("Erro ao fazer login com o Google.");
+      }
+    };
+
+    window.logout = async () => {
+      await signOut(auth);
+      location.reload();
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+      const loadingEl = document.getElementById('loading');
+      if (user) {
+        currentUser = user;
+        document.getElementById('userInfo').style.display = 'flex';
+        document.getElementById('btnLogin').style.display = 'none';
+        document.getElementById('userAvatar').src = user.photoURL || '';
+
+        await loadCloudData();
+      } else {
+        currentUser = null;
+        document.getElementById('userInfo').style.display = 'none';
+        document.getElementById('btnLogin').style.display = 'block';
+      }
+      loadingEl.style.display = 'none';
+      render();
+    });
+
+    async function saveState() {
+      localStorage.setItem('app_clients_tasks', JSON.stringify(clientsData));
+
+      if (currentUser) {
+        try {
+          await setDoc(doc(db, "users", currentUser.uid), {
+            clientsData: clientsData,
+            defaultTasks: defaultTasks,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (err) {
+          console.error("Erro ao salvar na nuvem:", err);
+        }
+      }
     }
 
-    function closeSidebar() {
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('sidebarOverlay').classList.remove('active');
+    async function loadCloudData() {
+      if (!currentUser) return;
+      try {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const docSnap = await getDoc(userDocRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.clientsData) {
+            clientsData = data.clientsData;
+            localStorage.setItem('app_clients_tasks', JSON.stringify(clientsData));
+          }
+          if (data.defaultTasks) {
+            defaultTasks = data.defaultTasks;
+            localStorage.setItem('app_default_tasks', JSON.stringify(defaultTasks));
+          }
+        } else {
+          await saveState();
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados da nuvem:", err);
+      }
     }
 
-    // Controle da Engrenagem
-    function toggleGearMenu() {
-      document.getElementById('gearMenu').classList.toggle('active');
+    function addBusinessDays(startDate, days) {
+      let count = 0;
+      let currentDate = new Date(startDate);
+      while (count < days) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        const dayOfWeek = currentDate.getDay();
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          count++;
+        }
+      }
+      return currentDate.toLocaleDateString('pt-BR');
     }
 
-    // Troca de Páginas via Submenu
-    function switchPage(pageId, title) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.sidebar-menu li').forEach(m => m.classList.remove('active'));
-
-      document.getElementById(`page-${pageId}`).classList.add('active');
-      document.getElementById(`menu-${pageId}`).classList.add('active');
-      document.getElementById('page-title').innerText = title;
-
-      closeSidebar();
+    function calculateDeadline(startDateStr, ruleOption) {
+      const parts = startDateStr.split('/');
+      const startDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      
+      if (ruleOption === "1") {
+        return addBusinessDays(startDate, 4);
+      } else if (ruleOption === "2") {
+        return addBusinessDays(startDate, 7);
+      }
+      return addBusinessDays(startDate, 4);
     }
 
-    // Alternar Layout Mobile
-    function toggleMobileView() {
-      document.body.classList.toggle('mobile-mode');
-      toggleGearMenu();
+    function getDaysRemaining(deadlineStr) {
+      if (!deadlineStr) return null;
+      const parts = deadlineStr.split('/');
+      const deadlineDate = new Date(parts[2], parts[1] - 1, parts[0]);
+      
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      deadlineDate.setHours(0, 0, 0, 0);
+
+      const diffTime = deadlineDate - today;
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    // Baixar Tela Ativa em PDF
-    function exportToPDF() {
-      toggleGearMenu();
-      window.print();
+    function render(autoFocusIndex = null) {
+      const board = document.getElementById('board');
+      board.innerHTML = '';
+
+      clientsData.forEach((client, clientIndex) => {
+        const card = document.createElement('div');
+        let cardClass = 'card';
+
+        let deadlineStatusText = client.deadline || 'Aguardando definição';
+        
+        if (client.collapsed) {
+          cardClass += ' collapsed';
+        } else {
+          const daysRemaining = getDaysRemaining(client.deadline);
+
+          if (daysRemaining !== null) {
+            if (daysRemaining < 0) {
+              cardClass += ' status-overdue';
+            } else if (daysRemaining <= 1) {
+              cardClass += ' status-danger';
+            } else if (daysRemaining <= 3) {
+              cardClass += ' status-warning';
+            } else {
+              cardClass += ' status-billed';
+            }
+          } else if (client.billed) {
+            cardClass += ' status-billed';
+          }
+        }
+
+        card.className = cardClass;
+
+        const header = document.createElement('div');
+        header.className = 'card-header';
+
+        const titleBox = document.createElement('div');
+        titleBox.style.flex = "1";
+
+        const titleInput = document.createElement('input');
+        titleInput.className = 'card-title-input';
+        titleInput.value = client.name;
+        titleInput.placeholder = "Nome do Cliente";
+        
+        if (autoFocusIndex === clientIndex) {
+          titleInput.id = `client-title-input-${clientIndex}`;
+        }
+
+        titleInput.onchange = (e) => {
+          clientsData[clientIndex].name = e.target.value;
+          saveState();
+        };
+
+        const carInput = document.createElement('input');
+        carInput.className = 'card-car-input';
+        carInput.value = client.carModel || '';
+        carInput.placeholder = "Modelo do Carro";
+        carInput.id = `client-car-input-${clientIndex}`;
+
+        carInput.onchange = (e) => {
+          clientsData[clientIndex].carModel = e.target.value;
+          saveState();
+        };
+
+        titleInput.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            carInput.focus();
+            carInput.select();
+          }
+        };
+
+        const dateDisplay = document.createElement('div');
+        dateDisplay.className = 'card-date';
+
+        if (client.billed) {
+          dateDisplay.innerHTML = `Faturado: ${client.billedDate}<br>Prazo: ${deadlineStatusText}`;
+        } else {
+          dateDisplay.innerHTML = `Criado: ${client.date}<br>Prazo: ${deadlineStatusText}`;
+        }
+
+        titleBox.appendChild(titleInput);
+        titleBox.appendChild(carInput);
+        titleBox.appendChild(dateDisplay);
+
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
+
+        const actionBtn = document.createElement('button');
+        
+        if (!client.billed) {
+          actionBtn.className = 'btn-icon';
+          actionBtn.innerText = 'Faturar';
+          actionBtn.onclick = () => {
+            if (confirm(`Deseja confirmar o faturamento para ${client.name}?`)) {
+              const todayStr = new Date().toLocaleDateString('pt-BR');
+              clientsData[clientIndex].billed = true;
+              clientsData[clientIndex].billedDate = todayStr;
+              if (!clientsData[clientIndex].deadline) {
+                clientsData[clientIndex].deadline = calculateDeadline(todayStr, client.deadlineRule || "1");
+              }
+              saveState();
+              render();
+            }
+          };
+        } else {
+          actionBtn.className = 'btn-icon';
+          actionBtn.innerText = 'Entrega';
+          actionBtn.onclick = () => {
+            if (confirm(`Deseja confirmar a entrega do veículo para ${client.name}?`)) {
+              clientsData[clientIndex].collapsed = true;
+              clientsData[clientIndex].deliveryDate = new Date().toLocaleDateString('pt-BR');
+              saveState();
+              render();
+            }
+          };
+        }
+
+        actions.appendChild(actionBtn);
+
+        // Ícone e Botão de Calendário Corrigido
+        const calendarWrapper = document.createElement('div');
+        calendarWrapper.className = 'btn-calendar-trigger';
+        calendarWrapper.innerHTML = '📅';
+        calendarWrapper.title = "Alterar Data do Prazo";
+
+        const datePicker = document.createElement('input');
+        datePicker.type = 'date';
+        
+        if (client.deadline) {
+          const parts = client.deadline.split('/');
+          if (parts.length === 3) {
+            datePicker.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        }
+
+        datePicker.onchange = (e) => {
+          if (e.target.value) {
+            const [yyyy, mm, dd] = e.target.value.split('-');
+            clientsData[clientIndex].deadline = `${dd}/${mm}/${yyyy}`;
+            saveState();
+            render();
+          }
+        };
+
+        calendarWrapper.appendChild(datePicker);
+        actions.appendChild(calendarWrapper);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-icon';
+        deleteBtn.style.color = '#ef4444';
+        deleteBtn.innerText = '×';
+        deleteBtn.onclick = () => {
+          if (confirm(`Deseja remover ${client.name}?`)) {
+            clientsData.splice(clientIndex, 1);
+            saveState();
+            render();
+          }
+        };
+
+        actions.appendChild(deleteBtn);
+
+        header.appendChild(titleBox);
+        header.appendChild(actions);
+        card.appendChild(header);
+
+        const body = document.createElement('div');
+        body.className = 'card-body';
+
+        client.tasks.forEach((task, taskIndex) => {
+          const item = document.createElement('div');
+          item.className = 'task-item';
+
+          const dot = document.createElement('div');
+          dot.className = `status-dot ${task.done ? 'completed' : ''}`;
+          dot.onclick = () => {
+            clientsData[clientIndex].tasks[taskIndex].done = !clientsData[clientIndex].tasks[taskIndex].done;
+            saveState();
+            render();
+          };
+
+          const input = document.createElement('input');
+          input.className = `task-input ${task.done ? 'completed-text' : ''}`;
+          input.value = task.text;
+          input.placeholder = "Descrição da tarefa...";
+          input.onchange = (e) => {
+            clientsData[clientIndex].tasks[taskIndex].text = e.target.value;
+            saveState();
+          };
+
+          const removeTaskBtn = document.createElement('button');
+          removeTaskBtn.className = 'btn-delete-task';
+          removeTaskBtn.innerText = '×';
+          removeTaskBtn.onclick = () => {
+            clientsData[clientIndex].tasks.splice(taskIndex, 1);
+            saveState();
+            render();
+          };
+
+          item.appendChild(dot);
+          item.appendChild(input);
+          item.appendChild(removeTaskBtn);
+          body.appendChild(item);
+        });
+
+        card.appendChild(body);
+
+        const addTaskBtn = document.createElement('button');
+        addTaskBtn.className = 'add-task-btn';
+        addTaskBtn.style.width = '100%';
+        addTaskBtn.style.marginTop = '4px';
+        addTaskBtn.style.fontSize = '0.8rem';
+        addTaskBtn.style.padding = '4px 8px';
+        addTaskBtn.innerText = '+ Adicionar Tarefa';
+        addTaskBtn.onclick = () => {
+          clientsData[clientIndex].tasks.push({ text: '', done: false });
+          saveState();
+          render();
+        };
+
+        card.appendChild(addTaskBtn);
+        board.appendChild(card);
+      });
+
+      const addClientBtn = document.createElement('button');
+      addClientBtn.className = 'btn-add-card';
+      addClientBtn.innerText = '+ Adicionar Cliente';
+      addClientBtn.onclick = createNewClient;
+      board.appendChild(addClientBtn);
+
+      if (autoFocusIndex !== null) {
+        setTimeout(() => {
+          const newTitleInput = document.getElementById(`client-title-input-${autoFocusIndex}`);
+          if (newTitleInput) {
+            newTitleInput.focus();
+            newTitleInput.select();
+          }
+        }, 50);
+      }
     }
 
-    // Lógica da Agenda do Dia
-    function addAgendaItem(event) {
-      event.preventDefault();
-      const input = document.getElementById('agendaInput');
-      const text = input.value.trim();
-      if (!text) return;
+    function createNewClient() {
+      const today = new Date();
+      const todayStr = today.toLocaleDateString('pt-BR');
 
-      const li = document.createElement('li');
-      li.className = 'agenda-item';
-      li.innerHTML = `
-        <span onclick="toggleTask(this)" style="cursor:pointer;">${text}</span>
-        <button onclick="this.parentElement.remove()" style="background:none;border:none;color:red;cursor:pointer;">✕</button>
-      `;
+      const initialTasks = defaultTasks.map(taskText => ({ text: taskText, done: false }));
 
-      document.getElementById('agendaList').appendChild(li);
-      input.value = '';
+      const newIndex = clientsData.length;
+
+      clientsData.push({
+        name: 'Nome do Cliente',
+        carModel: '',
+        date: todayStr,
+        billed: false,
+        billedDate: null,
+        deadlineRule: "1",
+        deadline: null,
+        deliveryDate: null,
+        collapsed: false,
+        tasks: initialTasks
+      });
+
+      saveState();
+      render(newIndex);
     }
 
-    function toggleTask(element) {
-      element.parentElement.classList.toggle('done');
-    }
+    window.openSettings = function() {
+      document.getElementById('defaultTasksInput').value = defaultTasks.join('\n');
+      document.getElementById('settingsModal').style.display = 'flex';
+    };
+
+    window.closeSettings = function() {
+      document.getElementById('settingsModal').style.display = 'none';
+    };
+
+    window.saveSettings = function() {
+      const text = document.getElementById('defaultTasksInput').value;
+      defaultTasks = text.split('\n').map(t => t.trim()).filter(t => t.length > 0);
+      localStorage.setItem('app_default_tasks', JSON.stringify(defaultTasks));
+      saveState();
+      closeSettings();
+    };
+
+    window.openHistory = function() {
+      const historySearch = document.getElementById('historySearch');
+      if (historySearch) historySearch.value = '';
+      renderHistory();
+      document.getElementById('historyModal').style.display = 'flex';
+    };
+
+    window.closeHistory = function() {
+      document.getElementById('historyModal').style.display = 'none';
+    };
+
+    window.renderHistory = function() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = '';
+
+      const searchTerm = (document.getElementById('historySearch')?.value || '').toLowerCase();
+
+      const filteredClients = clientsData
+        .map((client, originalIndex) => ({ ...client, originalIndex }))
+        .filter(client => client.collapsed)
+        .filter(client => (client.name || '').toLowerCase().includes(searchTerm) || (client.carModel || '').toLowerCase().includes(searchTerm));
+
+      if (filteredClients.length === 0) {
+        historyList.innerHTML = '<div class="no-history">Nenhum processo concluído encontrado.</div>';
+        return;
+      }
+
+      filteredClients.forEach(client => {
+        const item = document.createElement('div');
+        item.className = 'history-item';
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'history-item-info';
+
+        const name = document.createElement('div');
+        name.className = 'history-item-name';
+        name.innerText = `${client.name || 'Cliente sem nome'}${client.carModel ? ' - ' + client.carModel : ''}`;
+
+        const dates = document.createElement('div');
+        dates.className = 'history-item-dates';
+        dates.innerText = `Faturado: ${client.billedDate || 'N/A'} | Entregue: ${client.deliveryDate || 'N/A'}`;
+
+        infoDiv.appendChild(name);
+        infoDiv.appendChild(dates);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'history-item-actions';
+
+        const restoreBtn = document.createElement('button');
+        restoreBtn.className = 'btn-restore';
+        restoreBtn.innerText = 'Reabrir';
+        restoreBtn.onclick = () => {
+          clientsData[client.originalIndex].collapsed = false;
+          saveState();
+          render();
+          renderHistory();
+        };
+
+        const deleteSingleBtn = document.createElement('button');
+        deleteSingleBtn.className = 'btn-clear-single';
+        deleteSingleBtn.innerText = 'Limpar';
+        deleteSingleBtn.onclick = () => {
+          if (confirm(`Deseja apagar permanentemente ${client.name} do histórico?`)) {
+            clientsData.splice(client.originalIndex, 1);
+            saveState();
+            render();
+            renderHistory();
+          }
+        };
+
+        actionsDiv.appendChild(restoreBtn);
+        actionsDiv.appendChild(deleteSingleBtn);
+
+        item.appendChild(infoDiv);
+        item.appendChild(actionsDiv);
+        historyList.appendChild(item);
+      });
+    };
+
+    window.clearAllHistory = function() {
+      const hasHistory = clientsData.some(client => client.collapsed);
+      if (!hasHistory) return;
+
+      if (confirm('Deseja apagar TODOS os processos concluídos do histórico?')) {
+        clientsData = clientsData.filter(client => !client.collapsed);
+        saveState();
+        render();
+        renderHistory();
+      }
+    };
+
+    window.exportData = function() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(clientsData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `tarefas_clientes_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    };
+
+    window.importData = function(event) {
+      const fileReader = new FileReader();
+      fileReader.onload = function(e) {
+        try {
+          clientsData = JSON.parse(e.target.result);
+          saveState();
+          render();
+        } catch (err) {
+          alert('Erro ao carregar arquivo. Certifique-se de que é um backup válido.');
+        }
+      };
+      fileReader.readAsText(event.target.files[0]);
+    };
   </script>
 </body>
 </html>
