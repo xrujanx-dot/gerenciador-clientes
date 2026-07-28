@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de Tarefas e Clientes</title>
   <!-- Bibliotecas para Gerar PDF do quadro em Alta Resolução -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
@@ -344,7 +344,7 @@
       gap: 6px;
     }
 
-    /* Tarefa Item com Botão Check */
+    /* Tarefa Item */
     .task-item {
       display: flex;
       align-items: center;
@@ -353,6 +353,21 @@
       padding: 4px 6px;
       border-radius: 6px;
       border: 1px solid rgba(0, 0, 0, 0.08);
+      transition: all 0.2s;
+    }
+
+    /* Cores de Importância na Agenda do Dia */
+    .task-item.priority-white {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+    }
+    .task-item.priority-orange {
+      background: #fff7ed;
+      border: 2px solid #f97316;
+    }
+    .task-item.priority-red {
+      background: #fef2f2;
+      border: 2px solid #ef4444;
     }
 
     .status-dot {
@@ -388,22 +403,34 @@
       font-weight: 500;
     }
 
-    .btn-confirm-task {
-      background: #10b981;
-      color: #ffffff;
-      border: none;
+    /* Botão seletor de prioridade */
+    .btn-priority-selector {
+      border: 1px solid #cbd5e1;
       padding: 2px 6px;
       border-radius: 4px;
       cursor: pointer;
       font-size: 0.75rem;
       font-weight: bold;
+      background: #ffffff;
       display: flex;
       align-items: center;
-      justify-content: center;
+      gap: 3px;
+      flex-shrink: 0;
     }
 
-    .btn-confirm-task:hover {
-      background: #059669;
+    /* Botões Mover Para Cima / Baixo */
+    .btn-move-task {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      font-size: 0.7rem;
+      padding: 2px 3px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .btn-move-task:hover {
+      color: var(--accent-color);
+      background: transparent;
     }
 
     .btn-delete-task {
@@ -448,7 +475,7 @@
       display: grid;
       grid-template-columns: 320px 1fr;
       gap: 20px;
-      align-items: stretch; /* Garante mesma altura nos dois blocos */
+      align-items: stretch;
     }
 
     .mini-calendar-card {
@@ -486,11 +513,12 @@
     .calendar-day-btn {
       padding: 8px 0;
       border-radius: 4px;
-      border: 1px solid transparent;
+      border: 2px solid transparent;
       background: transparent;
       cursor: pointer;
       font-size: 0.8rem;
       width: 100%;
+      position: relative;
     }
 
     .calendar-day-btn:hover {
@@ -498,13 +526,26 @@
     }
 
     .calendar-day-btn.today-btn {
-      border-color: var(--accent-color);
       font-weight: bold;
     }
 
     .calendar-day-btn.selected-btn {
       background: var(--accent-color) !important;
       color: #ffffff !important;
+      font-weight: bold;
+    }
+
+    /* BORDAS DE HIERARQUIA NO CALENDÁRIO */
+    .calendar-day-btn.has-red-task {
+      border-color: #ef4444 !important;
+      font-weight: bold;
+    }
+    .calendar-day-btn.has-orange-task {
+      border-color: #f97316 !important;
+      font-weight: bold;
+    }
+    .calendar-day-btn.has-white-task {
+      border-color: #2563eb !important;
       font-weight: bold;
     }
 
@@ -515,7 +556,7 @@
       border-radius: 8px;
       padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      height: 380px; /* Mesma altura fixa do mini calendário */
+      height: 380px;
       display: flex;
       flex-direction: column;
     }
@@ -837,7 +878,7 @@
         </div>
       </div>
 
-      <!-- Tarefas do Dia (Destaque Grande) -->
+      <!-- Tarefas do Dia -->
       <div class="daily-tasks-card">
         <div class="daily-header">
           <div>
@@ -1264,22 +1305,17 @@
           input.value = task.text;
           input.placeholder = "Descrição da tarefa...";
 
-          const confirmBtn = document.createElement('button');
-          confirmBtn.className = 'btn-confirm-task';
-          confirmBtn.innerHTML = '✓';
-          confirmBtn.title = "Aprovar/Salvar Tarefa";
-
           const handleSaveTask = () => {
             clientsData[clientIndex].tasks[taskIndex].text = input.value;
             saveState();
-            render();
           };
 
-          confirmBtn.onclick = handleSaveTask;
+          input.onchange = handleSaveTask;
           input.onkeydown = (e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               handleSaveTask();
+              input.blur();
             }
           };
 
@@ -1294,7 +1330,6 @@
 
           item.appendChild(dot);
           item.appendChild(input);
-          item.appendChild(confirmBtn);
           item.appendChild(removeTaskBtn);
           body.appendChild(item);
         });
@@ -1359,11 +1394,22 @@
       render(newIndex);
     }
 
-    // LÓGICA DA AGENDA DO DIA COM MINI CALENDÁRIO
+    // LÓGICA DA AGENDA DO DIA COM MINI CALENDÁRIO E HIERARQUIA DE CORES
     window.changeMonth = function(direction) {
       currentDate.setMonth(currentDate.getMonth() + direction);
       renderCalendar();
     };
+
+    function getDayPriorityColor(dateKey) {
+      const tasks = dailyAgendaData[dateKey] || [];
+      const pendingTasks = tasks.filter(t => !t.done);
+
+      if (pendingTasks.length === 0) return null;
+
+      if (pendingTasks.some(t => t.priority === 'red')) return 'red';
+      if (pendingTasks.some(t => t.priority === 'orange')) return 'orange';
+      return 'white';
+    }
 
     function renderCalendar() {
       const year = currentDate.getFullYear();
@@ -1400,6 +1446,16 @@
           btn.classList.add('selected-btn');
         }
 
+        // Aplicar contorno de prioridade da agenda de acordo com a hierarquia
+        const dayPriority = getDayPriorityColor(dateKey);
+        if (dayPriority === 'red') {
+          btn.classList.add('has-red-task');
+        } else if (dayPriority === 'orange') {
+          btn.classList.add('has-orange-task');
+        } else if (dayPriority === 'white') {
+          btn.classList.add('has-white-task');
+        }
+
         btn.onclick = () => {
           selectedDateStr = dateKey;
           renderCalendar();
@@ -1424,7 +1480,8 @@
 
       tasks.forEach((task, index) => {
         const item = document.createElement('div');
-        item.className = 'task-item';
+        const priorityClass = task.priority === 'red' ? 'priority-red' : (task.priority === 'orange' ? 'priority-orange' : 'priority-white');
+        item.className = `task-item ${priorityClass}`;
         item.style.padding = '8px';
 
         const dot = document.createElement('div');
@@ -1433,6 +1490,7 @@
           dailyAgendaData[selectedDateStr][index].done = !dailyAgendaData[selectedDateStr][index].done;
           saveState();
           renderDailyAgenda();
+          renderCalendar();
         };
 
         const input = document.createElement('input');
@@ -1441,25 +1499,80 @@
         input.value = task.text;
         input.placeholder = "Escreva sua tarefa do dia...";
 
-        const confirmBtn = document.createElement('button');
-        confirmBtn.className = 'btn-confirm-task';
-        confirmBtn.style.padding = '4px 8px';
-        confirmBtn.innerHTML = '✓';
-        confirmBtn.title = "Aprovar/Salvar Tarefa";
-
         const handleSaveDailyTask = () => {
           dailyAgendaData[selectedDateStr][index].text = input.value;
           saveState();
-          renderDailyAgenda();
         };
 
-        confirmBtn.onclick = handleSaveDailyTask;
+        input.onchange = handleSaveDailyTask;
         input.onkeydown = (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
             handleSaveDailyTask();
+            input.blur();
           }
         };
+
+        // Botão para Alternar a Cor de Grau de Importância
+        const priorityBtn = document.createElement('button');
+        priorityBtn.className = 'btn-priority-selector';
+        
+        let colorDot = '⚪';
+        if (task.priority === 'orange') colorDot = '🟠';
+        if (task.priority === 'red') colorDot = '🔴';
+        priorityBtn.innerHTML = `${colorDot}`;
+        priorityBtn.title = "Alterar Grau de Importância";
+
+        priorityBtn.onclick = () => {
+          if (!task.priority || task.priority === 'white') {
+            dailyAgendaData[selectedDateStr][index].priority = 'orange';
+          } else if (task.priority === 'orange') {
+            dailyAgendaData[selectedDateStr][index].priority = 'red';
+          } else {
+            dailyAgendaData[selectedDateStr][index].priority = 'white';
+          }
+          saveState();
+          renderDailyAgenda();
+          renderCalendar();
+        };
+
+        // Controles de Mover para Cima e para Baixo
+        const movesContainer = document.createElement('div');
+        movesContainer.style.display = 'flex';
+        movesContainer.style.flexDirection = 'column';
+
+        const moveUpBtn = document.createElement('button');
+        moveUpBtn.className = 'btn-move-task';
+        moveUpBtn.innerText = '▲';
+        moveUpBtn.title = "Mover para cima";
+        moveUpBtn.disabled = index === 0;
+        moveUpBtn.onclick = () => {
+          if (index > 0) {
+            const temp = dailyAgendaData[selectedDateStr][index];
+            dailyAgendaData[selectedDateStr][index] = dailyAgendaData[selectedDateStr][index - 1];
+            dailyAgendaData[selectedDateStr][index - 1] = temp;
+            saveState();
+            renderDailyAgenda();
+          }
+        };
+
+        const moveDownBtn = document.createElement('button');
+        moveDownBtn.className = 'btn-move-task';
+        moveDownBtn.innerText = '▼';
+        moveDownBtn.title = "Mover para baixo";
+        moveDownBtn.disabled = index === tasks.length - 1;
+        moveDownBtn.onclick = () => {
+          if (index < tasks.length - 1) {
+            const temp = dailyAgendaData[selectedDateStr][index];
+            dailyAgendaData[selectedDateStr][index] = dailyAgendaData[selectedDateStr][index + 1];
+            dailyAgendaData[selectedDateStr][index + 1] = temp;
+            saveState();
+            renderDailyAgenda();
+          }
+        };
+
+        movesContainer.appendChild(moveUpBtn);
+        movesContainer.appendChild(moveDownBtn);
 
         const removeBtn = document.createElement('button');
         removeBtn.className = 'btn-delete-task';
@@ -1468,11 +1581,13 @@
           dailyAgendaData[selectedDateStr].splice(index, 1);
           saveState();
           renderDailyAgenda();
+          renderCalendar();
         };
 
         item.appendChild(dot);
         item.appendChild(input);
-        item.appendChild(confirmBtn);
+        item.appendChild(priorityBtn);
+        item.appendChild(movesContainer);
         item.appendChild(removeBtn);
         listContainer.appendChild(item);
       });
@@ -1482,16 +1597,16 @@
       if (!dailyAgendaData[selectedDateStr]) {
         dailyAgendaData[selectedDateStr] = [];
       }
-      dailyAgendaData[selectedDateStr].push({ text: '', done: false });
+      dailyAgendaData[selectedDateStr].push({ text: '', done: false, priority: 'white' });
       saveState();
       renderDailyAgenda();
+      renderCalendar();
     };
 
-    // Baixar PDF do Quadro Ativo em ALTA QUALIDADE mantendo o layout de desktop
+    // Baixar PDF do Quadro Ativo
     window.downloadPDF = async function() {
       const element = document.getElementById('board');
 
-      // Aplica temporariamente estilo de largura de desktop para o canvas renderizar alinhado
       const originalWidth = element.style.width;
       element.style.width = '1400px';
 
@@ -1506,7 +1621,7 @@
       try {
         await html2pdf().set(opt).from(element).save();
       } finally {
-        element.style.width = originalWidth; // Restaura visual da tela
+        element.style.width = originalWidth;
       }
     };
 
