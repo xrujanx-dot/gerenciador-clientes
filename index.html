@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de Tarefas e Clientes</title>
-  <!-- Biblioteca para Gerar PDF do quadro -->
+  <!-- Bibliotecas para Gerar PDF do quadro em Alta Resolução -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
@@ -31,6 +32,7 @@
       padding: 16px;
     }
 
+    /* Cabeçalho Organizado para Mobile e Desktop */
     header {
       display: flex;
       justify-content: space-between;
@@ -41,12 +43,14 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       margin-bottom: 20px;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     .header-left {
       display: flex;
       align-items: center;
       gap: 12px;
+      min-width: 0;
     }
 
     .btn-hamburger {
@@ -58,11 +62,15 @@
       padding: 4px;
       display: flex;
       align-items: center;
+      flex-shrink: 0;
     }
 
     h1 {
       font-size: 1.1rem;
       font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .controls {
@@ -82,13 +90,14 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
+      object-fit: cover;
     }
 
     button {
       background: #ffffff;
       border: 1px solid var(--border-color);
       color: var(--text-main);
-      padding: 8px 14px;
+      padding: 8px 12px;
       border-radius: 6px;
       font-weight: 500;
       font-size: 0.85rem;
@@ -112,8 +121,8 @@
     }
 
     .btn-settings {
-      padding: 8px 12px;
-      font-size: 1.1rem;
+      padding: 8px 10px;
+      font-size: 1rem;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -335,14 +344,15 @@
       gap: 6px;
     }
 
+    /* Tarefa Item com Botão Check */
     .task-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      background: rgba(255, 255, 255, 0.6);
-      padding: 6px 8px;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 4px 6px;
       border-radius: 6px;
-      border: 1px solid rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.08);
     }
 
     .status-dot {
@@ -376,6 +386,24 @@
       color: var(--green-status);
       text-decoration: none; 
       font-weight: 500;
+    }
+
+    .btn-confirm-task {
+      background: #10b981;
+      color: #ffffff;
+      border: none;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-confirm-task:hover {
+      background: #059669;
     }
 
     .btn-delete-task {
@@ -415,12 +443,12 @@
       background: #ffffff;
     }
 
-    /* Agenda do Dia Styles */
+    /* Layout da Agenda do Dia Ajustado com Scroll Interno */
     .agenda-container {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 320px 1fr;
       gap: 20px;
-      align-items: start;
+      align-items: stretch; /* Garante mesma altura nos dois blocos */
     }
 
     .mini-calendar-card {
@@ -429,6 +457,9 @@
       border-radius: 8px;
       padding: 16px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      height: 380px;
+      display: flex;
+      flex-direction: column;
     }
 
     .calendar-header {
@@ -477,33 +508,50 @@
       font-weight: bold;
     }
 
+    /* Card de Tarefas da Agenda com Limite Fixo de Altura */
     .daily-tasks-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 20px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      min-height: 400px;
+      height: 380px; /* Mesma altura fixa do mini calendário */
+      display: flex;
+      flex-direction: column;
     }
 
     .daily-header {
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       border-bottom: 1px solid var(--border-color);
       padding-bottom: 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-shrink: 0;
     }
 
     .daily-header h2 {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       color: var(--accent-color);
     }
 
+    /* Container de tarefas com Rolagem Interna */
     .daily-tasks-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+
+    .daily-tasks-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .daily-tasks-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
     }
 
     /* Modais */
@@ -687,15 +735,21 @@
 
     @media (max-width: 640px) {
       body {
-        padding: 10px;
+        padding: 8px;
       }
 
       header {
-        padding: 10px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
       }
 
       h1 {
         font-size: 0.95rem;
+      }
+
+      .controls {
+        width: 100%;
+        justify-content: flex-end;
       }
 
       .card, .btn-add-card {
@@ -705,6 +759,11 @@
 
       .agenda-container {
         grid-template-columns: 1fr;
+        align-items: start;
+      }
+
+      .daily-tasks-card {
+        height: 350px;
       }
 
       .controls button {
@@ -782,7 +841,7 @@
       <div class="daily-tasks-card">
         <div class="daily-header">
           <div>
-            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">AGENDA DA DATA:</span>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: bold;">AGENDA DA DATA:</span>
             <h2 id="selected-date-display"></h2>
           </div>
           <button class="btn-primary" onclick="addDailyTask()">+ Nova Tarefa</button>
@@ -1204,9 +1263,24 @@
           input.className = `task-input ${task.done ? 'completed-text' : ''}`;
           input.value = task.text;
           input.placeholder = "Descrição da tarefa...";
-          input.onchange = (e) => {
-            clientsData[clientIndex].tasks[taskIndex].text = e.target.value;
+
+          const confirmBtn = document.createElement('button');
+          confirmBtn.className = 'btn-confirm-task';
+          confirmBtn.innerHTML = '✓';
+          confirmBtn.title = "Aprovar/Salvar Tarefa";
+
+          const handleSaveTask = () => {
+            clientsData[clientIndex].tasks[taskIndex].text = input.value;
             saveState();
+            render();
+          };
+
+          confirmBtn.onclick = handleSaveTask;
+          input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleSaveTask();
+            }
           };
 
           const removeTaskBtn = document.createElement('button');
@@ -1220,6 +1294,7 @@
 
           item.appendChild(dot);
           item.appendChild(input);
+          item.appendChild(confirmBtn);
           item.appendChild(removeTaskBtn);
           body.appendChild(item);
         });
@@ -1227,7 +1302,6 @@
         card.appendChild(body);
 
         const addTaskBtn = document.createElement('button');
-        addTaskBtn.className = 'add-task-btn';
         addTaskBtn.style.width = '100%';
         addTaskBtn.style.marginTop = '4px';
         addTaskBtn.style.fontSize = '0.8rem';
@@ -1344,14 +1418,14 @@
       const tasks = dailyAgendaData[selectedDateStr] || [];
 
       if (tasks.length === 0) {
-        listContainer.innerHTML = '<div style="color: var(--text-muted); font-size:0.9rem;">Nenhuma tarefa agendada para este dia.</div>';
+        listContainer.innerHTML = '<div style="color: var(--text-muted); font-size:0.9rem; padding: 10px 0;">Nenhuma tarefa agendada para este dia.</div>';
         return;
       }
 
       tasks.forEach((task, index) => {
         const item = document.createElement('div');
         item.className = 'task-item';
-        item.style.padding = '10px';
+        item.style.padding = '8px';
 
         const dot = document.createElement('div');
         dot.className = `status-dot ${task.done ? 'completed' : ''}`;
@@ -1363,12 +1437,28 @@
 
         const input = document.createElement('input');
         input.className = `task-input ${task.done ? 'completed-text' : ''}`;
-        input.style.fontSize = '0.95rem';
+        input.style.fontSize = '0.9rem';
         input.value = task.text;
         input.placeholder = "Escreva sua tarefa do dia...";
-        input.onchange = (e) => {
-          dailyAgendaData[selectedDateStr][index].text = e.target.value;
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.className = 'btn-confirm-task';
+        confirmBtn.style.padding = '4px 8px';
+        confirmBtn.innerHTML = '✓';
+        confirmBtn.title = "Aprovar/Salvar Tarefa";
+
+        const handleSaveDailyTask = () => {
+          dailyAgendaData[selectedDateStr][index].text = input.value;
           saveState();
+          renderDailyAgenda();
+        };
+
+        confirmBtn.onclick = handleSaveDailyTask;
+        input.onkeydown = (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleSaveDailyTask();
+          }
         };
 
         const removeBtn = document.createElement('button');
@@ -1382,6 +1472,7 @@
 
         item.appendChild(dot);
         item.appendChild(input);
+        item.appendChild(confirmBtn);
         item.appendChild(removeBtn);
         listContainer.appendChild(item);
       });
@@ -1396,17 +1487,27 @@
       renderDailyAgenda();
     };
 
-    // Baixar PDF do quadro ativo
-    window.downloadPDF = function() {
+    // Baixar PDF do Quadro Ativo em ALTA QUALIDADE mantendo o layout de desktop
+    window.downloadPDF = async function() {
       const element = document.getElementById('board');
+
+      // Aplica temporariamente estilo de largura de desktop para o canvas renderizar alinhado
+      const originalWidth = element.style.width;
+      element.style.width = '1400px';
+
       const opt = {
-        margin:       0.3,
+        margin:       [0.2, 0.2, 0.2, 0.2],
         filename:     `quadro_clientes_${selectedDateStr}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
+        jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }
       };
-      html2pdf().set(opt).from(element).save();
+
+      try {
+        await html2pdf().set(opt).from(element).save();
+      } finally {
+        element.style.width = originalWidth; // Restaura visual da tela
+      }
     };
 
     window.openSettings = function() {
