@@ -222,12 +222,10 @@
       color: var(--accent-color);
     }
 
-    /* Estrutura Principal e Escala Padrão (~80%) */
+    /* Estrutura Principal */
     main {
       padding: 20px;
       flex: 1;
-      transform: scale(0.85);
-      transform-origin: top center;
     }
 
     .page {
@@ -238,10 +236,10 @@
       display: block;
     }
 
-    /* Board Responsivo (Corrigido para Zoom e Telas Diferentes) */
+    /* Board Responsivo */
     .board {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 16px;
       align-items: start;
     }
@@ -567,12 +565,11 @@
     /* Otimização para Celular */
     @media (max-width: 768px) {
       main {
-        transform: none; /* Desativa escala reduzida no celular */
         padding: 12px;
       }
 
       .board {
-        grid-template-columns: repeat(2, 1fr) !important; /* 2 caixas por linha no celular */
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 10px;
       }
 
@@ -720,7 +717,6 @@
         display: none !important;
       }
       main {
-        transform: none !important;
         padding: 0 !important;
       }
       .board {
