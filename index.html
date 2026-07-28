@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gerenciador de Tarefas e Clientes</title>
+  <!-- Biblioteca para Gerar PDF do quadro -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --bg-color: #f4f6f9;
@@ -26,55 +28,48 @@
     body {
       background-color: var(--bg-color);
       color: var(--text-main);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      padding: 16px;
     }
 
-    /* Cabeçalho Principal */
     header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: var(--card-bg);
-      padding: 12px 24px;
-      border-bottom: 1px solid var(--border-color);
+      padding: 12px 16px;
+      border-radius: 8px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      margin-bottom: 20px;
+      gap: 12px;
     }
 
     .header-left {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 12px;
     }
 
     .btn-hamburger {
-      background: none;
+      background: transparent;
       border: none;
       font-size: 1.5rem;
       cursor: pointer;
       color: var(--text-main);
-      padding: 4px 8px;
-      border-radius: 6px;
-    }
-
-    .btn-hamburger:hover {
-      background: #f1f5f9;
+      padding: 4px;
+      display: flex;
+      align-items: center;
     }
 
     h1 {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
     }
 
     .controls {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
-      position: relative;
+      flex-wrap: wrap;
     }
 
     .user-profile {
@@ -124,93 +119,44 @@
       justify-content: center;
     }
 
-    /* Menu Dropdown da Engrenagem */
-    .gear-dropdown {
-      position: absolute;
-      top: 45px;
-      right: 0;
-      background: #ffffff;
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      display: none;
-      flex-direction: column;
-      width: 180px;
-      z-index: 101;
-      overflow: hidden;
-    }
-
-    .gear-dropdown.active {
-      display: flex;
-    }
-
-    .gear-dropdown button {
-      border: none;
-      border-radius: 0;
-      text-align: left;
-      padding: 10px 14px;
-      width: 100%;
-    }
-
-    .gear-dropdown button:hover {
-      background: #f1f5f9;
-    }
-
-    /* Submenu / Sidebar Lateral */
-    .sidebar-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0,0,0,0.3);
-      display: none;
-      z-index: 150;
-    }
-
-    .sidebar-overlay.active {
-      display: block;
-    }
-
+    /* Submenu Lateral (Sidebar) */
     .sidebar {
       position: fixed;
       top: 0;
       left: -260px;
-      width: 260px;
-      height: 100%;
-      background: #ffffff;
+      width: 250px;
+      height: 100vh;
+      background: var(--card-bg);
       box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      z-index: 1100;
       transition: left 0.3s ease;
-      z-index: 200;
-      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      padding: 20px 0;
     }
 
-    .sidebar.open {
+    .sidebar.active {
       left: 0;
     }
 
-    .sidebar h2 {
-      font-size: 1.1rem;
+    .sidebar-header {
+      padding: 0 20px 16px 20px;
       border-bottom: 1px solid var(--border-color);
-      padding-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
     }
 
     .sidebar-menu {
       list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      margin-top: 10px;
     }
 
     .sidebar-menu li {
-      padding: 10px 12px;
-      border-radius: 6px;
+      padding: 12px 20px;
       cursor: pointer;
       font-weight: 500;
-      font-size: 0.9rem;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -218,51 +164,79 @@
     }
 
     .sidebar-menu li:hover, .sidebar-menu li.active {
-      background: #eff6ff;
+      background: #f1f5f9;
       color: var(--accent-color);
     }
 
-    /* Estrutura Principal */
-    main {
-      padding: 20px;
-      flex: 1;
-    }
-
-    .page {
+    .sidebar-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.3);
+      z-index: 1050;
       display: none;
     }
 
-    .page.active {
+    .sidebar-backdrop.active {
       display: block;
     }
 
-    /* Board Responsivo */
-    .board {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 16px;
-      align-items: start;
+    /* Views / Paginas */
+    .view-page {
+      display: none;
     }
 
-    /* Cards de Clientes */
+    .view-page.active {
+      display: block;
+    }
+
+    /* Board de Clientes */
+    .board {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
     .card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 8px;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
       padding: 12px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.04);
       display: flex;
       flex-direction: column;
       gap: 10px;
       transition: all 0.2s;
-      width: 100%;
     }
 
-    .card.status-billed { background-color: #ecfdf5; border-color: #a7f3d0; }
-    .card.status-warning { background-color: #fef3c7; border-color: #fde68a; }
-    .card.status-danger { background-color: #fee2e2; border-color: #fca5a5; }
-    .card.status-overdue { background-color: #fee2e2; border-color: #ef4444; }
-    .card.collapsed { display: none; }
+    .card.status-billed {
+      background-color: #ecfdf5;
+      border-color: #a7f3d0;
+    }
+
+    .card.status-warning {
+      background-color: #fef3c7;
+      border-color: #fde68a;
+    }
+
+    .card.status-danger {
+      background-color: #fee2e2;
+      border-color: #fca5a5;
+    }
+
+    .card.status-overdue {
+      background-color: #fee2e2;
+      border-color: #ef4444;
+    }
+
+    .card.collapsed {
+      display: none; 
+    }
 
     .card-header {
       display: flex;
@@ -334,12 +308,16 @@
       position: relative;
     }
 
-    .btn-calendar-trigger:hover { background: #f1f5f9; }
+    .btn-calendar-trigger:hover {
+      background: #f1f5f9;
+    }
 
     .btn-calendar-trigger input[type="date"] {
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       opacity: 0;
       cursor: pointer;
     }
@@ -377,8 +355,13 @@
       transition: background-color 0.2s, transform 0.1s;
     }
 
-    .status-dot:active { transform: scale(0.9); }
-    .status-dot.completed { background-color: var(--green-status); }
+    .status-dot:active {
+      transform: scale(0.9);
+    }
+
+    .status-dot.completed {
+      background-color: var(--green-status);
+    }
 
     .task-input {
       border: none;
@@ -415,7 +398,8 @@
       color: var(--text-muted);
       font-size: 0.9rem;
       font-weight: 600;
-      width: 100%;
+      width: calc((100% - (16px * 4)) / 5);
+      min-width: 210px;
       height: 100px;
       border-radius: 8px;
       display: flex;
@@ -431,38 +415,35 @@
       background: #ffffff;
     }
 
-    /* Página: Agenda do Dia com Calendário */
-    .agenda-layout {
+    /* Agenda do Dia Styles */
+    .agenda-container {
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 300px 1fr;
       gap: 20px;
-      max-width: 1000px;
-      margin: 0 auto;
+      align-items: start;
     }
 
-    .calendar-card {
-      background: #fff;
+    .mini-calendar-card {
+      background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 16px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     .calendar-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      font-weight: 600;
       margin-bottom: 12px;
-      font-size: 0.9rem;
     }
 
-    .mini-calendar-grid {
+    .calendar-grid {
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 4px;
       text-align: center;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
     }
 
     .calendar-day-head {
@@ -471,118 +452,67 @@
       padding: 4px 0;
     }
 
-    .calendar-day-cell {
-      padding: 6px 0;
+    .calendar-day-btn {
+      padding: 8px 0;
       border-radius: 4px;
+      border: 1px solid transparent;
+      background: transparent;
       cursor: pointer;
-      transition: background 0.2s;
+      font-size: 0.8rem;
+      width: 100%;
     }
 
-    .calendar-day-cell:hover { background: #f1f5f9; }
-    .calendar-day-cell.selected { background: var(--accent-color); color: #fff; font-weight: 600; }
-    .calendar-day-cell.empty { cursor: default; }
+    .calendar-day-btn:hover {
+      background: #f1f5f9;
+    }
 
-    .agenda-main-card {
-      background: #fff;
+    .calendar-day-btn.today-btn {
+      border-color: var(--accent-color);
+      font-weight: bold;
+    }
+
+    .calendar-day-btn.selected-btn {
+      background: var(--accent-color) !important;
+      color: #ffffff !important;
+      font-weight: bold;
+    }
+
+    .daily-tasks-card {
+      background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 8px;
       padding: 20px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      min-height: 400px;
     }
 
-    .agenda-big-date {
-      display: flex;
-      align-items: baseline;
-      gap: 12px;
-      border-bottom: 2px solid var(--border-color);
-      padding-bottom: 12px;
+    .daily-header {
       margin-bottom: 20px;
-    }
-
-    .big-day-num {
-      font-size: 3.2rem;
-      font-weight: 800;
-      color: var(--accent-color);
-      line-height: 1;
-    }
-
-    .big-day-info {
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
       display: flex;
-      flex-direction: column;
-    }
-
-    .big-day-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      text-transform: uppercase;
-    }
-
-    .big-day-month {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .agenda-form {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    .agenda-form input {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 0.85rem;
-      outline: none;
-    }
-
-    .agenda-form input:focus { border-color: var(--accent-color); }
-
-    .agenda-tasks-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .agenda-task-item {
-      display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 10px 12px;
-      background: #f8fafc;
-      border: 1px solid var(--border-color);
-      border-radius: 6px;
-      font-size: 0.85rem;
+      align-items: center;
     }
 
-    .agenda-task-item.completed span {
-      text-decoration: line-through;
-      color: var(--text-muted);
+    .daily-header h2 {
+      font-size: 1.8rem;
+      color: var(--accent-color);
     }
 
-    /* Otimização para Celular */
-    @media (max-width: 768px) {
-      main {
-        padding: 12px;
-      }
-
-      .board {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 10px;
-      }
-
-      .agenda-layout {
-        grid-template-columns: 1fr;
-      }
+    .daily-tasks-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
 
     /* Modais */
     .modal-overlay {
       position: fixed;
-      top: 0; left: 0;
-      width: 100vw; height: 100vh;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: rgba(0, 0, 0, 0.4);
       display: none;
       justify-content: center;
@@ -622,9 +552,14 @@
       outline: none;
     }
 
-    .history-search-input:focus { border-color: var(--accent-color); }
+    .history-search-input:focus {
+      border-color: var(--accent-color);
+    }
 
-    .modal h2 { font-size: 1.1rem; color: var(--text-main); }
+    .modal h2 {
+      font-size: 1.1rem;
+      color: var(--text-main);
+    }
 
     .modal label {
       font-size: 0.85rem;
@@ -670,12 +605,33 @@
       font-size: 0.85rem;
     }
 
-    .history-item-info { display: flex; flex-direction: column; gap: 2px; }
-    .history-item-name { font-weight: 600; color: var(--text-main); }
-    .history-item-dates { font-size: 0.75rem; color: var(--text-muted); }
-    .history-item-actions { display: flex; gap: 6px; }
+    .history-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
 
-    .btn-restore { background: #f1f5f9; font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; }
+    .history-item-name {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .history-item-dates {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .history-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-restore {
+      background: #f1f5f9;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
 
     .btn-clear-single {
       background: #fee2e2;
@@ -686,7 +642,10 @@
       border-radius: 4px;
     }
 
-    .btn-clear-single:hover { background: #fca5a5; color: #ffffff; }
+    .btn-clear-single:hover {
+      background: #fca5a5;
+      color: #ffffff;
+    }
 
     .btn-clear-all {
       background: #fee2e2;
@@ -696,10 +655,18 @@
       padding: 4px 10px;
     }
 
-    .btn-clear-all:hover { background: #ef4444; color: #ffffff; }
-    .no-history { text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 20px 0; }
+    .btn-clear-all:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
 
-    /* Estilo de Carregamento */
+    .no-history {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      padding: 20px 0;
+    }
+
     .loading-overlay {
       position: fixed;
       top:0; left:0; width:100vw; height:100vh;
@@ -711,16 +678,38 @@
       z-index: 2000;
     }
 
-    /* Regras de Impressão / PDF */
-    @media print {
-      header, .sidebar, .sidebar-overlay, .gear-dropdown, .btn-add-card, .agenda-form {
-        display: none !important;
+    /* OTIMIZAÇÕES RESPONSIVAS PARA CELULAR */
+    @media (max-width: 1024px) {
+      .card, .btn-add-card {
+        width: calc((100% - 16px) / 2);
       }
-      main {
-        padding: 0 !important;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 10px;
       }
-      .board {
-        grid-template-columns: repeat(3, 1fr) !important;
+
+      header {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 0.95rem;
+      }
+
+      .card, .btn-add-card {
+        width: 100%;
+        min-width: 100%;
+      }
+
+      .agenda-container {
+        grid-template-columns: 1fr;
+      }
+
+      .controls button {
+        padding: 6px 10px;
+        font-size: 0.8rem;
       }
     }
   </style>
@@ -729,13 +718,24 @@
 
   <div id="loading" class="loading-overlay">Carregando dados na nuvem...</div>
 
-  <!-- Cabeçalho -->
+  <!-- Menu Lateral Retrátil -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span>Menu</span>
+      <button onclick="toggleSidebar()" style="border:none; background:transparent; font-size:1.2rem; cursor:pointer;">×</button>
+    </div>
+    <ul class="sidebar-menu">
+      <li id="menu-board" class="active" onclick="switchView('board')">📋 Quadro de Clientes</li>
+      <li id="menu-agenda" onclick="switchView('agenda')">📅 Agenda do Dia</li>
+    </ul>
+  </div>
+
   <header>
     <div class="header-left">
-      <button class="btn-hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="btn-hamburger" onclick="toggleSidebar()" title="Abrir Menu">☰</button>
       <h1 id="page-title">Gerenciador de Tarefas por Cliente</h1>
     </div>
-
     <div class="controls">
       <div id="userInfo" class="user-profile" style="display: none;">
         <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
@@ -743,69 +743,52 @@
       </div>
       <button id="btnLogin" class="btn-primary" onclick="loginWithGoogle()" style="display: none;">Entrar com Google</button>
       <button class="btn-settings" onclick="openHistory()" title="Histórico de Concluídos">📋 Histórico</button>
-      <button class="btn-settings" onclick="toggleGearMenu()" title="Configurações">⚙️</button>
-
-      <!-- Dropdown da Engrenagem -->
-      <div class="gear-dropdown" id="gearDropdown">
-        <button onclick="downloadPDF()">📄 Baixar PDF</button>
-        <button onclick="openSettings()">⚙️ Ajustes Padrão</button>
-      </div>
+      <button class="btn-settings" onclick="openSettings()" title="Configurações">⚙️</button>
     </div>
   </header>
 
-  <!-- Overlay e Submenu Lateral (3 Pauzinhos) -->
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-  <div class="sidebar" id="sidebar">
-    <h2>Navegação</h2>
-    <ul class="sidebar-menu">
-      <li id="menu-quadro" class="active" onclick="switchPage('quadro', 'Gerenciador de Tarefas por Cliente')">
-        📋 Quadro de Clientes
-      </li>
-      <li id="menu-agenda" onclick="switchPage('agenda', 'Agenda do Dia')">
-        📅 Agenda do Dia
-      </li>
-    </ul>
-  </div>
-
-  <main>
-    <!-- Página 1: Quadro de Clientes -->
-    <div id="page-quadro" class="page active">
-      <div class="board" id="board">
-        <!-- Caixas dos clientes e botão de adicionar serão inseridos dinamicamente -->
-      </div>
+  <!-- PÁGINA 1: Quadro de Clientes -->
+  <main class="view-page active" id="view-board">
+    <div class="board" id="board">
+      <!-- Caixas dos clientes e botão de adicionar serão inseridos dinamicamente -->
     </div>
+  </main>
 
-    <!-- Página 2: Agenda do Dia -->
-    <div id="page-agenda" class="page">
-      <div class="agenda-layout">
-        <!-- Calendário Pequeno -->
-        <div class="calendar-card">
-          <div class="calendar-header">
-            <span id="calendarMonthLabel">Mês Ano</span>
-          </div>
-          <div class="mini-calendar-grid" id="miniCalendarGrid">
-            <!-- Calendário gerado dinamicamente -->
-          </div>
+  <!-- PÁGINA 2: Agenda do Dia -->
+  <main class="view-page" id="view-agenda">
+    <div class="agenda-container">
+      <!-- Mini Calendário -->
+      <div class="mini-calendar-card">
+        <div class="calendar-header">
+          <button onclick="changeMonth(-1)">&lt;</button>
+          <strong id="calendar-month-year"></strong>
+          <button onclick="changeMonth(1)">&gt;</button>
         </div>
+        <div class="calendar-grid">
+          <div class="calendar-day-head">D</div>
+          <div class="calendar-day-head">S</div>
+          <div class="calendar-day-head">T</div>
+          <div class="calendar-day-head">Q</div>
+          <div class="calendar-day-head">Q</div>
+          <div class="calendar-day-head">S</div>
+          <div class="calendar-day-head">S</div>
+        </div>
+        <div class="calendar-grid" id="calendar-days">
+          <!-- Dias inseridos via JS -->
+        </div>
+      </div>
 
-        <!-- Conteúdo do Dia Selecionado -->
-        <div class="agenda-main-card">
-          <div class="agenda-big-date">
-            <div class="big-day-num" id="bigDayNum">--</div>
-            <div class="big-day-info">
-              <div class="big-day-name" id="bigDayName">--</div>
-              <div class="big-day-month" id="bigDayMonth">--</div>
-            </div>
+      <!-- Tarefas do Dia (Destaque Grande) -->
+      <div class="daily-tasks-card">
+        <div class="daily-header">
+          <div>
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: bold;">AGENDA DA DATA:</span>
+            <h2 id="selected-date-display"></h2>
           </div>
-
-          <form class="agenda-form" onsubmit="addDailyTask(event)">
-            <input type="text" id="dailyTaskInput" placeholder="Adicionar nova tarefa para este dia..." required>
-            <button type="submit" class="btn-primary">Adicionar</button>
-          </form>
-
-          <ul class="agenda-tasks-list" id="dailyTasksList">
-            <!-- Tarefas da agenda renderizadas aqui -->
-          </ul>
+          <button class="btn-primary" onclick="addDailyTask()">+ Nova Tarefa</button>
+        </div>
+        <div class="daily-tasks-list" id="daily-tasks-list">
+          <!-- Tarefas da agenda do dia selecionado -->
         </div>
       </div>
     </div>
@@ -819,7 +802,11 @@
         <label>Passo a passo padrão (um por linha):</label>
         <textarea id="defaultTasksInput"></textarea>
       </div>
-      <div class="modal-actions">
+      <div style="margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <label>Exportar Quadro Ativo:</label>
+        <button class="btn-primary" style="width: 100%;" onclick="downloadPDF()">📄 Baixar em PDF</button>
+      </div>
+      <div class="modal-actions" style="margin-top: 10px;">
         <button onclick="closeSettings()">Cancelar</button>
         <button class="btn-primary" onclick="saveSettings()">Salvar</button>
       </div>
@@ -877,37 +864,44 @@
     let clientsData = JSON.parse(localStorage.getItem('app_clients_tasks')) || [];
     let dailyAgendaData = JSON.parse(localStorage.getItem('app_daily_agenda')) || {};
 
-    let selectedDate = new Date();
+    // Estado da Agenda
+    let currentDate = new Date();
+    let selectedDateStr = formatDateKey(new Date());
 
-    // Controle de Submenu e Modais
+    function formatDateKey(dateObj) {
+      const dd = String(dateObj.getDate()).padStart(2, '0');
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const yyyy = dateObj.getFullYear();
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    function formatDateDisplay(dateKey) {
+      const [yyyy, mm, dd] = dateKey.split('-');
+      return `${dd}/${mm}/${yyyy}`;
+    }
+
+    // Controle de Submenu Lateral
     window.toggleSidebar = function() {
-      document.getElementById('sidebar').classList.toggle('open');
-      document.getElementById('sidebarOverlay').classList.toggle('active');
+      document.getElementById('sidebar').classList.toggle('active');
+      document.getElementById('sidebarBackdrop').classList.toggle('active');
     };
 
-    window.closeSidebar = function() {
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('sidebarOverlay').classList.remove('active');
-    };
+    window.switchView = function(viewName) {
+      document.querySelectorAll('.view-page').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.sidebar-menu li').forEach(el => el.classList.remove('active'));
 
-    window.toggleGearMenu = function() {
-      document.getElementById('gearDropdown').classList.toggle('active');
-    };
-
-    window.switchPage = function(pageId, title) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.sidebar-menu li').forEach(m => m.classList.remove('active'));
-
-      document.getElementById(`page-${pageId}`).classList.add('active');
-      document.getElementById(`menu-${pageId}`).classList.add('active');
-      document.getElementById('page-title').innerText = title;
-
-      closeSidebar();
-    };
-
-    window.downloadPDF = function() {
-      document.getElementById('gearDropdown').classList.remove('active');
-      window.print();
+      if(viewName === 'board') {
+        document.getElementById('view-board').classList.add('active');
+        document.getElementById('menu-board').classList.add('active');
+        document.getElementById('page-title').innerText = "Gerenciador de Tarefas por Cliente";
+      } else if(viewName === 'agenda') {
+        document.getElementById('view-agenda').classList.add('active');
+        document.getElementById('menu-agenda').classList.add('active');
+        document.getElementById('page-title').innerText = "Agenda do Dia";
+        renderCalendar();
+        renderDailyAgenda();
+      }
+      toggleSidebar();
     };
 
     // Autenticação e Nuvem
@@ -941,7 +935,6 @@
       }
       loadingEl.style.display = 'none';
       render();
-      renderAgenda();
     });
 
     async function saveState() {
@@ -990,7 +983,6 @@
       }
     }
 
-    // Regras de Prazos
     function addBusinessDays(startDate, days) {
       let count = 0;
       let currentDate = new Date(startDate);
@@ -1029,7 +1021,6 @@
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
 
-    // Renderização do Quadro
     function render(autoFocusIndex = null) {
       const board = document.getElementById('board');
       board.innerHTML = '';
@@ -1294,129 +1285,131 @@
       render(newIndex);
     }
 
-    // Lógica da Agenda do Dia e Mini Calendário
-    function renderAgenda() {
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth();
+    // LÓGICA DA AGENDA DO DIA COM MINI CALENDÁRIO
+    window.changeMonth = function(direction) {
+      currentDate.setMonth(currentDate.getMonth() + direction);
+      renderCalendar();
+    };
+
+    function renderCalendar() {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
 
       const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-      const dayNames = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+      document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year}`;
 
-      document.getElementById('calendarMonthLabel').innerText = `${monthNames[month]} ${year}`;
+      const firstDayIndex = new Date(year, month, 1).getDay();
+      const totalDays = new Date(year, month + 1, 0).getDate();
 
-      // Atualiza Bloco de Destaque Grande
-      document.getElementById('bigDayNum').innerText = String(selectedDate.getDate()).padStart(2, '0');
-      document.getElementById('bigDayName').innerText = dayNames[selectedDate.getDay()];
-      document.getElementById('bigDayMonth').innerText = `${monthNames[month]} ${year}`;
+      const daysContainer = document.getElementById('calendar-days');
+      daysContainer.innerHTML = '';
 
-      // Monta Calendário
-      const miniGrid = document.getElementById('miniCalendarGrid');
-      miniGrid.innerHTML = '';
-
-      const weekDays = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
-      weekDays.forEach(d => {
-        const head = document.createElement('div');
-        head.className = 'calendar-day-head';
-        head.innerText = d;
-        miniGrid.appendChild(head);
-      });
-
-      const firstDay = new Date(year, month, 1).getDay();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-      for (let i = 0; i < firstDay; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'calendar-day-cell empty';
-        miniGrid.appendChild(empty);
+      for (let i = 0; i < firstDayIndex; i++) {
+        const emptyDiv = document.createElement('div');
+        daysContainer.appendChild(emptyDiv);
       }
 
-      for (let day = 1; day <= daysInMonth; day++) {
-        const cell = document.createElement('div');
-        cell.className = 'calendar-day-cell';
-        cell.innerText = day;
+      const todayKey = formatDateKey(new Date());
 
-        if (
-          day === selectedDate.getDate() &&
-          month === selectedDate.getMonth() &&
-          year === selectedDate.getFullYear()
-        ) {
-          cell.classList.add('selected');
+      for (let day = 1; day <= totalDays; day++) {
+        const dateObj = new Date(year, month, day);
+        const dateKey = formatDateKey(dateObj);
+
+        const btn = document.createElement('button');
+        btn.className = 'calendar-day-btn';
+        btn.innerText = day;
+
+        if (dateKey === todayKey) {
+          btn.classList.add('today-btn');
+        }
+        if (dateKey === selectedDateStr) {
+          btn.classList.add('selected-btn');
         }
 
-        cell.onclick = () => {
-          selectedDate = new Date(year, month, day);
-          renderAgenda();
+        btn.onclick = () => {
+          selectedDateStr = dateKey;
+          renderCalendar();
+          renderDailyAgenda();
         };
 
-        miniGrid.appendChild(cell);
+        daysContainer.appendChild(btn);
       }
-
-      renderDailyTasks();
     }
 
-    function getDateKey(dateObj) {
-      return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
-    }
+    function renderDailyAgenda() {
+      document.getElementById('selected-date-display').innerText = formatDateDisplay(selectedDateStr);
+      const listContainer = document.getElementById('daily-tasks-list');
+      listContainer.innerHTML = '';
 
-    function renderDailyTasks() {
-      const list = document.getElementById('dailyTasksList');
-      list.innerHTML = '';
-
-      const dateKey = getDateKey(selectedDate);
-      const tasks = dailyAgendaData[dateKey] || [];
+      const tasks = dailyAgendaData[selectedDateStr] || [];
 
       if (tasks.length === 0) {
-        list.innerHTML = '<li style="text-align:center; color: var(--text-muted); padding: 10px; font-size:0.85rem;">Nenhuma tarefa cadastrada para esta data.</li>';
+        listContainer.innerHTML = '<div style="color: var(--text-muted); font-size:0.9rem;">Nenhuma tarefa agendada para este dia.</div>';
         return;
       }
 
       tasks.forEach((task, index) => {
-        const li = document.createElement('li');
-        li.className = `agenda-task-item ${task.done ? 'completed' : ''}`;
-        li.innerHTML = `
-          <span style="cursor:pointer;" onclick="toggleDailyTask(${index})">${task.text}</span>
-          <button onclick="removeDailyTask(${index})" style="background:none;border:none;color:#ef4444;cursor:pointer;">✕</button>
-        `;
-        list.appendChild(li);
+        const item = document.createElement('div');
+        item.className = 'task-item';
+        item.style.padding = '10px';
+
+        const dot = document.createElement('div');
+        dot.className = `status-dot ${task.done ? 'completed' : ''}`;
+        dot.onclick = () => {
+          dailyAgendaData[selectedDateStr][index].done = !dailyAgendaData[selectedDateStr][index].done;
+          saveState();
+          renderDailyAgenda();
+        };
+
+        const input = document.createElement('input');
+        input.className = `task-input ${task.done ? 'completed-text' : ''}`;
+        input.style.fontSize = '0.95rem';
+        input.value = task.text;
+        input.placeholder = "Escreva sua tarefa do dia...";
+        input.onchange = (e) => {
+          dailyAgendaData[selectedDateStr][index].text = e.target.value;
+          saveState();
+        };
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'btn-delete-task';
+        removeBtn.innerText = '×';
+        removeBtn.onclick = () => {
+          dailyAgendaData[selectedDateStr].splice(index, 1);
+          saveState();
+          renderDailyAgenda();
+        };
+
+        item.appendChild(dot);
+        item.appendChild(input);
+        item.appendChild(removeBtn);
+        listContainer.appendChild(item);
       });
     }
 
-    window.addDailyTask = function(event) {
-      event.preventDefault();
-      const input = document.getElementById('dailyTaskInput');
-      const text = input.value.trim();
-      if (!text) return;
-
-      const dateKey = getDateKey(selectedDate);
-      if (!dailyAgendaData[dateKey]) dailyAgendaData[dateKey] = [];
-
-      dailyAgendaData[dateKey].push({ text: text, done: false });
-      input.value = '';
+    window.addDailyTask = function() {
+      if (!dailyAgendaData[selectedDateStr]) {
+        dailyAgendaData[selectedDateStr] = [];
+      }
+      dailyAgendaData[selectedDateStr].push({ text: '', done: false });
       saveState();
-      renderDailyTasks();
+      renderDailyAgenda();
     };
 
-    window.toggleDailyTask = function(index) {
-      const dateKey = getDateKey(selectedDate);
-      if (dailyAgendaData[dateKey] && dailyAgendaData[dateKey][index]) {
-        dailyAgendaData[dateKey][index].done = !dailyAgendaData[dateKey][index].done;
-        saveState();
-        renderDailyTasks();
-      }
+    // Baixar PDF do quadro ativo
+    window.downloadPDF = function() {
+      const element = document.getElementById('board');
+      const opt = {
+        margin:       0.3,
+        filename:     `quadro_clientes_${selectedDateStr}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'landscape' }
+      };
+      html2pdf().set(opt).from(element).save();
     };
 
-    window.removeDailyTask = function(index) {
-      const dateKey = getDateKey(selectedDate);
-      if (dailyAgendaData[dateKey]) {
-        dailyAgendaData[dateKey].splice(index, 1);
-        saveState();
-        renderDailyTasks();
-      }
-    };
-
-    // Modais de Configuração e Histórico
     window.openSettings = function() {
-      document.getElementById('gearDropdown').classList.remove('active');
       document.getElementById('defaultTasksInput').value = defaultTasks.join('\n');
       document.getElementById('settingsModal').style.display = 'flex';
     };
